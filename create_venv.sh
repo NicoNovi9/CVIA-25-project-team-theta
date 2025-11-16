@@ -5,13 +5,13 @@
 # module load Python/3.13.1-GCCcore-14.2.0
 # # -----------------------------------------------
 
-python3 -m venv spark_venv
+python3 -m venv .venv
 
-source spark_venv/bin/activate
+source .venv/bin/activate
 
 pip install --upgrade pip
 
 pip install numpy
 pip install torch torchvision
 
-source spark_venv/bin/activate
+source .venv/bin/activate

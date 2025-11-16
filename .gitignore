@@ -1,1 +1,3 @@
 spark_venv/
+data/*
+!data/.gitkeep

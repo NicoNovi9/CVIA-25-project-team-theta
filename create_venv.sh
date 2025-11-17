@@ -11,7 +11,7 @@ source .venv/bin/activate
 
 pip install --upgrade pip
 
-pip install numpy
-pip install torch torchvision
+pip install 
+pip install torch torchvision numpy pandas
 
 source .venv/bin/activate

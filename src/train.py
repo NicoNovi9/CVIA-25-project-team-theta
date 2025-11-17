@@ -4,8 +4,8 @@ from torch.utils.data import DataLoader, random_split
 import torchvision.transforms as T
 from torch.utils.data import Subset
 
-from simple_model import SimpleDetector
-from spark_detection_dataset import SparkDetectionDataset
+from models.simple_model import SimpleDetector
+from utils.spark_detection_dataset import SparkDetectionDataset
 
 
 if __name__ == "__main__":
@@ -32,8 +32,8 @@ if __name__ == "__main__":
         transform=transform
     )
 
-    # train_dataset = Subset(train_dataset, range(1000))
-    # val_dataset = Subset(val_dataset, range(100))
+    train_dataset = Subset(train_dataset, range(10))
+    val_dataset = Subset(val_dataset, range(1))
 
     train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=2)
     val_loader   = DataLoader(val_dataset,   batch_size=8, shuffle=False, num_workers=2)
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     print(f"Using device: {device}")
     print("Starting training...")
 
-    for epoch in range(50):
+    for epoch in range(5):
         print(f"Starting epoch {epoch+1:03d}")
         model.train()
 

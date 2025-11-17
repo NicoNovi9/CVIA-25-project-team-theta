@@ -3,7 +3,7 @@
 #SBATCH --nodes=1 
 #SBATCH --ntasks=1 
 #SBATCH --cpus-per-task=8
-#SBATCH --partition=gpu
+#SBATCH --partition=cpu
 #SBATCH --time=02:00:00 
 #SBATCH --qos=default 
 #SBATCH --account=p200981 

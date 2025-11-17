@@ -14,6 +14,7 @@ if __name__ == "__main__":
     DOWN_SAMPLE_SUBSET = 10
     BATCH_SIZE = 8
     N_EPOCHS = 5
+    LEARNING_RATE = 1e-3
 
     transform = T.Compose([
         T.Resize((256, 256)),
@@ -53,7 +54,7 @@ if __name__ == "__main__":
     ce_loss = nn.CrossEntropyLoss()
     bbox_loss_fn = nn.SmoothL1Loss()
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     print(f"Using device: {device}")
     print("Beginning training pipeline")

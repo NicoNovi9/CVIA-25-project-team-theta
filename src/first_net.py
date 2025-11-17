@@ -9,10 +9,9 @@ class SparkDetectionDataset(Dataset):
     def __init__(self, csv_path, image_root, split, transform=None):
         self.df = pd.read_csv(csv_path)
         self.image_root = image_root
-        self.split = split   # "train" oppure "val"
+        self.split = split   # "train" or "val"
         self.transform = transform
 
-        # mappa classe -> indice intero
         class_names = sorted(self.df["Class"].unique())
         self.class_to_idx = {c: i for i, c in enumerate(class_names)}
 
@@ -22,7 +21,6 @@ class SparkDetectionDataset(Dataset):
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
 
-        # path corretto: images/Class/train/image_xxx_img.jpg
         img_path = os.path.join(
             self.image_root,
             row["Class"],
@@ -54,4 +52,6 @@ if __name__ == "__main__":
     print("Image:", img)
     print("BBox:", bbox)
     print("Label:", label)
+    print(dataset.df.head())
+
 

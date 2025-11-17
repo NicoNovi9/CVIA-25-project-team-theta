@@ -10,13 +10,17 @@ from utils.spark_detection_dataset import SparkDetectionDataset
 
 if __name__ == "__main__":
     DATA_ROOT = "/project/scratch/p200981/spark2024"
-
-    print("Preparing dataset...", flush=True)
+    DOWN_SAMPLE = True
+    DOWN_SAMPLE_SUBSET = 10
+    BATCH_SIZE = 8
+    N_EPOCHS = 5
 
     transform = T.Compose([
         T.Resize((256, 256)),
         T.ToTensor(),
     ])
+
+    print("Preparing datasets")
 
     train_dataset = SparkDetectionDataset(
         csv_path=f"{DATA_ROOT}/train.csv",
@@ -32,13 +36,15 @@ if __name__ == "__main__":
         transform=transform
     )
 
-    train_dataset = Subset(train_dataset, range(10))
-    val_dataset = Subset(val_dataset, range(1))
+    if DOWN_SAMPLE:
+        train_dataset = Subset(train_dataset, range(DOWN_SAMPLE_SUBSET))
+        val_dataset = Subset(val_dataset, range(DOWN_SAMPLE_SUBSET // 10))
 
-    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=2)
-    val_loader   = DataLoader(val_dataset,   batch_size=8, shuffle=False, num_workers=2)
+    print(f"Data prepared: train samples = {len(train_dataset)}, val samples = {len(val_dataset)}")
 
-    print("Initializing model...")
+    print("Preparing DataLoaders")
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
+    val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -50,9 +56,9 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
     print(f"Using device: {device}")
-    print("Starting training...")
+    print("Beginning training pipeline")
 
-    for epoch in range(5):
+    for epoch in range(N_EPOCHS):
         print(f"Starting epoch {epoch+1:03d}")
         model.train()
 
@@ -91,6 +97,7 @@ if __name__ == "__main__":
               f"BBox: {avg_bbox_loss:.4f}")
 
         # VALIDATION
+        print(f"Starting validation for epoch {epoch+1:03d}")
         model.eval()
 
         val_loss = 0.0
@@ -125,4 +132,5 @@ if __name__ == "__main__":
               f"BBox: {avg_val_bbox:.4f}")
     
     torch.save(model.state_dict(), "model_wights/simple_model_weights.pth")
+    print("Saving model to model_wights/simple_model_weights.pth")
 

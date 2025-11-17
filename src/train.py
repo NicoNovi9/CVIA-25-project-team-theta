@@ -1,9 +1,8 @@
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 import torchvision.transforms as T
 from torch.utils.data import Subset
-
 
 from simple_model import SimpleDetector
 from spark_detection_dataset import SparkDetectionDataset
@@ -26,34 +25,43 @@ if __name__ == "__main__":
         transform=transform
     )
 
-    train_dataset = Subset(train_dataset, range(500))
-    loader = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=0)
+    val_dataset = SparkDetectionDataset(
+        csv_path=f"{DATA_ROOT}/val.csv",
+        image_root=f"{DATA_ROOT}/images",
+        split="val",
+        transform=transform
+    )
+
+    # train_dataset = Subset(train_dataset, range(1000))
+    # val_dataset = Subset(val_dataset, range(100))
+
+    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=2)
+    val_loader   = DataLoader(val_dataset,   batch_size=8, shuffle=False, num_workers=2)
 
     print("Initializing model...")
 
-    model = SimpleDetector(num_classes=10)
-    model = model.to("cuda" if torch.cuda.is_available() else "cpu")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    model = SimpleDetector(num_classes=10).to(device)
 
     ce_loss = nn.CrossEntropyLoss()
     bbox_loss_fn = nn.SmoothL1Loss()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
-
     print("Starting training...")
 
     for epoch in range(50):
         print(f"Starting epoch {epoch+1:03d}")
+        model.train()
 
         total_loss = 0.0
         total_cls_loss = 0.0
         total_bbox_loss = 0.0
         num_batches = 0
 
-        for imgs, bboxes, labels in loader:
-
+        for imgs, bboxes, labels in train_loader:
             imgs = imgs.to(device)
             bboxes = bboxes.to(device)
             labels = labels.to(device)
@@ -77,8 +85,44 @@ if __name__ == "__main__":
         avg_cls_loss = total_cls_loss / num_batches
         avg_bbox_loss = total_bbox_loss / num_batches
 
-        print(f"Epoch {epoch+1:03d} | "
-            f"Loss: {avg_loss:.4f} | "
-            f"Cls: {avg_cls_loss:.4f} | "
-            f"BBox: {avg_bbox_loss:.4f}")
+        print(f"TRAIN {epoch+1:03d} | "
+              f"Loss: {avg_loss:.4f} | "
+              f"Cls: {avg_cls_loss:.4f} | "
+              f"BBox: {avg_bbox_loss:.4f}")
+
+        # VALIDATION
+        model.eval()
+
+        val_loss = 0.0
+        val_cls_loss = 0.0
+        val_bbox_loss = 0.0
+        val_batches = 0
+
+        with torch.no_grad():
+            for imgs, bboxes, labels in val_loader:
+                imgs = imgs.to(device)
+                bboxes = bboxes.to(device)
+                labels = labels.to(device)
+
+                logits, pred_bbox = model(imgs)
+
+                loss_cls = ce_loss(logits, labels)
+                loss_bbox = bbox_loss_fn(pred_bbox, bboxes)
+                loss = loss_cls + loss_bbox
+
+                val_loss += loss.item()
+                val_cls_loss += loss_cls.item()
+                val_bbox_loss += loss_bbox.item()
+                val_batches += 1
+
+        avg_val_loss = val_loss / val_batches
+        avg_val_cls = val_cls_loss / val_batches
+        avg_val_bbox = val_bbox_loss / val_batches
+
+        print(f"VAL   {epoch+1:03d} | "
+              f"Loss: {avg_val_loss:.4f} | "
+              f"Cls: {avg_val_cls:.4f} | "
+              f"BBox: {avg_val_bbox:.4f}")
+    
+    torch.save(model.state_dict(), "model_wights/simple_model_weights.pth")
 

@@ -39,19 +39,3 @@ class SparkDetectionDataset(Dataset):
         return img, bbox, label
 
 
-if __name__ == "__main__":
-    DATA_ROOT = "/project/scratch/p200981/spark2024"
-
-    dataset = SparkDetectionDataset(
-        csv_path=f"{DATA_ROOT}/train.csv",
-        image_root=f"{DATA_ROOT}/images",
-        split="train"
-    )
-
-    img, bbox, label = dataset[0]
-    print("Image:", img)
-    print("BBox:", bbox)
-    print("Label:", label)
-    print(dataset.df.head())
-
-

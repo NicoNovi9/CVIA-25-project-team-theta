@@ -6,6 +6,8 @@
 #SBATCH --time=02:00:00 
 #SBATCH --qos=default 
 #SBATCH --account=p200981 
+#SBATCH --output=meluxina_train.out
+#SBATCH --error=meluxina_train.err
 
 echo "Activating virtual environment..."
 source .venv/bin/activate

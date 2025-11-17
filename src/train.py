@@ -54,6 +54,4 @@ if __name__ == "__main__":
             optimizer.step()
 
             print(f"Loss: {loss.item():.4f} | cls: {loss_cls.item():.4f} | bbox: {loss_bbox.item():.4f}")
-            break  # rimuovi questo break dopo il debug
-
         print(f"Epoch {epoch} done.")

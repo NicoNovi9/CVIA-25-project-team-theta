@@ -29,9 +29,10 @@ if __name__ == "__main__":
     DATA_ROOT = "/project/scratch/p200981/spark2024"
     DOWN_SAMPLE = False
     DOWN_SAMPLE_SUBSET = 10
-    BATCH_SIZE = 2056
+    BATCH_SIZE = 512
     N_EPOCHS = 100
     LEARNING_RATE = 1e-3
+    VALIDATION = False
 
     # Initialize DDP
     local_rank = setup_ddp()
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     is_main_process = local_rank == 0
 
     transform = T.Compose([
-        T.Resize((256, 256)),
+        #T.Resize((256, 256)),
         T.ToTensor(),
     ])
 
@@ -89,7 +90,7 @@ if __name__ == "__main__":
         train_dataset,
         batch_size=BATCH_SIZE,
         sampler=train_sampler,
-        num_workers=8,
+        num_workers=4,
         pin_memory=True
     )
     
@@ -97,7 +98,7 @@ if __name__ == "__main__":
         val_dataset,
         batch_size=BATCH_SIZE,
         sampler=val_sampler,
-        num_workers=8,
+        num_workers=4,
         pin_memory=True
     )
 
@@ -171,6 +172,9 @@ if __name__ == "__main__":
                   f"BBox: {avg_bbox_loss:.4f}")
 
         # VALIDATION
+        if not VALIDATION:
+            continue
+            
         model.eval()
 
         val_loss = 0.0

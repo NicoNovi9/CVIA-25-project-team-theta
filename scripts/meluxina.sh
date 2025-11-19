@@ -14,4 +14,4 @@ echo "Activating virtual environment..."
 source .venv/bin/activate
 
 echo "Starting training script..."
-python -u src/train_scripts/train.py
+python -u src/train.py

@@ -17,6 +17,7 @@ if __name__ == "__main__":
     BATCH_SIZE = 2056
     N_EPOCHS = 100
     LEARNING_RATE = 1e-3
+    VALIDATION = True
 
     transform = T.Compose([
         T.Resize((256, 256)),
@@ -100,6 +101,9 @@ if __name__ == "__main__":
               f"BBox: {avg_bbox_loss:.4f}")
 
         # VALIDATION
+        if not VALIDATION:
+            continue
+            
         model.eval()
 
         val_loss = 0.0

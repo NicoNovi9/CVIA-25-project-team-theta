@@ -7,11 +7,11 @@ class SimpleDetector(nn.Module):
         super().__init__()
 
         self.features = nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=3, stride=2, padding=1),  # -> 16 x 512 x 512
+            nn.Conv2d(3, 16, kernel_size=3, stride=2, padding=1),  
             nn.ReLU(),
-            nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1), # -> 32 x 256 x 256
+            nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1), 
             nn.ReLU(),
-            nn.AdaptiveAvgPool2d((1,1))   # -> 32 x 1 x 1
+            nn.AdaptiveAvgPool2d((1,1))
         )
 
         self.class_head = nn.Linear(32, num_classes)
@@ -20,11 +20,11 @@ class SimpleDetector(nn.Module):
 
     def forward(self, x):
         # x: (B, 3, H, W)
-        feats = self.features(x)       # (B, 32, 1, 1)
-        feats = feats.view(x.size(0), -1)  # (B, 32)
+        feats = self.features(x)     
+        feats = feats.view(x.size(0), -1)  
 
-        logits = self.class_head(feats)  # (B, num_classes)
-        bbox = self.bbox_head(feats)     # (B, 4)
+        logits = self.class_head(feats)  
+        bbox = self.bbox_head(feats)     
 
         return logits, bbox
 

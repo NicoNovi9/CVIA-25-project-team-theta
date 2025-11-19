@@ -6,14 +6,16 @@ from torch.utils.data import Subset
 
 from models.simple_model import SimpleDetector
 from utils.spark_detection_dataset import SparkDetectionDataset
-
+import torch
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 if __name__ == "__main__":
     DATA_ROOT = "/project/scratch/p200981/spark2024"
-    DOWN_SAMPLE = True
+    DOWN_SAMPLE = False
     DOWN_SAMPLE_SUBSET = 10
-    BATCH_SIZE = 8
-    N_EPOCHS = 5
+    BATCH_SIZE = 2056
+    N_EPOCHS = 100
     LEARNING_RATE = 1e-3
 
     transform = T.Compose([
@@ -44,8 +46,8 @@ if __name__ == "__main__":
     print(f"Data prepared: train samples = {len(train_dataset)}, val samples = {len(val_dataset)}")
 
     print("Preparing DataLoaders")
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
-    val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8)
+    val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False, num_workers=8)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -98,7 +100,6 @@ if __name__ == "__main__":
               f"BBox: {avg_bbox_loss:.4f}")
 
         # VALIDATION
-        print(f"Starting validation for epoch {epoch+1:03d}")
         model.eval()
 
         val_loss = 0.0

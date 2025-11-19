@@ -20,4 +20,4 @@ torchrun \
     --nproc_per_node=4 \
     --rdzv_backend=c10d \
     --rdzv_endpoint=localhost:0 \
-    src/train_ddp.py
+    src/train_scripts/train_ddp.py

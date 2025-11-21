@@ -5,6 +5,7 @@ import torchvision.transforms as T
 from torch.utils.data import Subset
 
 from models.simple_model import SimpleDetector
+from models.yolo_model import YOLODetector
 from utils.spark_detection_dataset import SparkDetectionDataset
 import torch
 import torch.distributed as dist
@@ -52,7 +53,8 @@ if __name__ == "__main__":
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    model = SimpleDetector(num_classes=10).to(device)
+    # model = SimpleDetector(num_classes=10).to(device)
+    model = YOLODetector(num_classes=10, model_size='n', pretrained=True).to(device)
 
     ce_loss = nn.CrossEntropyLoss()
     bbox_loss_fn = nn.SmoothL1Loss()

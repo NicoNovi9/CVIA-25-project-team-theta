@@ -14,6 +14,6 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install --upgrade pip
-pip install torch torchvision numpy pandas
+pip install torch torchvision numpy pandas ultralytics
 
 source .venv/bin/activate

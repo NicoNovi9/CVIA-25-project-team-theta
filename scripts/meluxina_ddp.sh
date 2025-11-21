@@ -11,6 +11,7 @@
 #SBATCH --output=meluxina_train.out
 #SBATCH --error=meluxina_train.err
 
+module load Python
 echo "Activating virtual environment..."
 source .venv/bin/activate
 

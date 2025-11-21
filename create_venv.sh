@@ -6,11 +6,10 @@
 # if we don't load a newer one, also the pytorch version
 # that pip installs is too old and doesn't support cuda with
 # sm_80 architecture (needed for A100 GPUs)
-module load env/staging/2025.1
-module load Python/3.13.1-GCCcore-14.2.0
+module load Python
 # -----------------------------------------------
 
-python3 -m venv .venv
+python -m venv .venv
 
 source .venv/bin/activate
 

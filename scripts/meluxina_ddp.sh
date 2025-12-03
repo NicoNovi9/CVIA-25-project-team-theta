@@ -16,13 +16,17 @@
 
 module load Python
 module load CUDA/12.6.0
+module load PyTorch/2.3.0-foss-2024a-CUDA-12.6.0
+module load torchvision/0.18.1-foss-2024a-CUDA-12.6.0
+
 if [ ! -d "ds_env" ]; then
     python -m venv ds_env
 
     source ds_env/bin/activate
 
     pip install --upgrade pip
-    pip install torch torchvision numpy pandas ultralytics
+    pip install setuptools
+    pip install numpy pandas ultralytics
     pip install deepspeed mpi4py
 fi
 
@@ -30,6 +34,7 @@ source ds_env/bin/activate
 
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 
+echo "Starting DeepSpeed training script on 4 GPUs..."
 srun python src/train_ddp.py \
     --deepspeed --deepspeed_config ds_config.json
 

@@ -202,7 +202,7 @@ if __name__ == "__main__":
         model=model,
         model_parameters=parameters,
         training_data=train_dataset,
-        config="../deepspeed/ds_config.json"
+        config="scripts/ds_config.json"
     )
     
     if global_rank == 0:

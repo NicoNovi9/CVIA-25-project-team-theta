@@ -1,13 +1,16 @@
 #!/bin/bash -l
 #SBATCH --job-name=train_ddp
-#SBATCH --nodes=1 
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=64
-#SBATCH --gres=gpu:4
+#SBATCH --time=2:00:00
 #SBATCH --partition=gpu
-#SBATCH --time=02:00:00 
-#SBATCH --qos=default 
-#SBATCH --account=p200981 
+#SBATCH --qos=default
+#SBATCH --account=p200981
+
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4
+#SBATCH --gpus-per-task=1
+#SBATCH --cpus-per-task=8
+#SBATCH --gres=gpu:4
+
 #SBATCH --output=meluxina_train.out
 #SBATCH --error=meluxina_train.err
 
@@ -25,10 +28,15 @@ fi
 
 source ds_env/bin/activate
 
-echo "Starting DDP training script on 4 GPUs..."
-torchrun \
-    --nnodes=1 \
-    --nproc_per_node=4 \
-    --rdzv_backend=c10d \
-    --rdzv_endpoint=localhost:0 \
-    src/train_ddp.py
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+
+srun python src/train_ddp.py \
+    --deepspeed --deepspeed_config ds_config.json
+
+# echo "Starting DDP training script on 4 GPUs..."
+# torchrun \
+#     --nnodes=1 \
+#     --nproc_per_node=4 \
+#     --rdzv_backend=c10d \
+#     --rdzv_endpoint=localhost:0 \
+#     src/train_ddp.py

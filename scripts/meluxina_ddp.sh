@@ -14,8 +14,15 @@
 #SBATCH --output=meluxina_train.out
 #SBATCH --error=meluxina_train.err
 
-module load Python
-module load CUDA/12.6.0
+module load Python/3.11.10-GCCcore-13.3.0
+module load scikit-learn/1.5.2-gfbf-2024a
+module load matplotlib/3.9.2-gfbf-2024a
+module load Seaborn/0.13.2-gfbf-2024a
+
+# module load setuptools/69.5.1-GCCcore-13.3.0
+
+module load CUDA/12.6.0 # non so se serve
+
 module load PyTorch/2.3.0-foss-2024a-CUDA-12.6.0
 module load torchvision/0.18.1-foss-2024a-CUDA-12.6.0
 
@@ -25,9 +32,7 @@ if [ ! -d "ds_env" ]; then
     source ds_env/bin/activate
 
     pip install --upgrade pip
-    pip install setuptools
-    pip install numpy pandas ultralytics
-    pip install deepspeed mpi4py
+    pip install setuptools ultralytics deepspeed mpi4py
 fi
 
 source ds_env/bin/activate

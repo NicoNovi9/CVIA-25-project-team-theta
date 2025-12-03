@@ -5,7 +5,7 @@
 #SBATCH --qos=default
 #SBATCH --account=p200981
 
-#SBATCH --nodes=1
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-task=1
 #SBATCH --cpus-per-task=8

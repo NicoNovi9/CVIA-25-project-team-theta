@@ -21,14 +21,15 @@ class YOLODetector(nn.Module):
 
             self.backbone = yolo.model.model[:10]
             
-            feature_dims = {
-                'n': 256,
-                's': 512,
-                'm': 768,
-                'l': 512,
-                'x': 640
-            }
-            feat_dim = feature_dims.get(model_size, 512)
+            # Dynamically determine feature dimension from backbone output
+            with torch.no_grad():
+                dummy_input = torch.randn(1, 3, 640, 640)
+                dummy_output = self.backbone(dummy_input)
+                if isinstance(dummy_output, (list, tuple)):
+                    dummy_output = dummy_output[-1]
+                feat_dim = dummy_output.shape[1]
+            
+            print(f"YOLO-{model_size} backbone output channels: {feat_dim}")
         
         except ImportError:
             print("Warning: ultralytics not installed. Using fallback simple backbone.")
@@ -71,15 +72,23 @@ class YOLODetector(nn.Module):
         model_file = f"yolov8{model_size}.pt" if pretrained else f"yolov8{model_size}.yaml"
         local_path = os.path.join(weights_dir, model_file)
 
+        # If file already exists locally, use it
         if os.path.exists(local_path):
             model = YOLO(local_path)
             return model
         
+        # Otherwise load from ultralytics (will download if needed)
+        # Note: In distributed training, only rank 0 should reach this point
+        # as pre-downloading is handled in train_ddp.py
         model = YOLO(model_file)
 
-        cache_file = os.path.join("model_weights", model_file)
-        if os.path.exists(model.ckpt_path):
-            shutil.move(model.ckpt_path, local_path)
+        # Move downloaded file to model_weights if it exists elsewhere
+        if hasattr(model, 'ckpt_path') and os.path.exists(model.ckpt_path) and model.ckpt_path != local_path:
+            try:
+                shutil.move(model.ckpt_path, local_path)
+            except (FileNotFoundError, shutil.Error):
+                # File might have been moved by another process or doesn't exist
+                pass
 
         return model
     

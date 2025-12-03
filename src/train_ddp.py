@@ -82,7 +82,7 @@ def train_model(model_engine, train_loader, val_loader, num_epochs=100, validati
             epoch_train_loss += loss.item()
             batch_count += 1
 
-            if batch_idx % 10 == 0 and global_rank == 0:
+            if batch_idx % 100 == 0 and global_rank == 0:
                 batch_time = time.time() - start_time_batch
                 print(f'[Epoch {epoch+1:3d}] Batch {batch_idx:4d} | Loss: {loss.item():.4f} | Cls: {loss_cls.item():.4f} | BBox: {loss_bbox.item():.4f} | Time: {batch_time:.2f}s')
                 start_time_batch = time.time()
@@ -193,7 +193,7 @@ if __name__ == "__main__":
 
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    model = YOLODetector(num_classes=10)
+    model = YOLODetector(num_classes=10, model_size="m")
     parameters = filter(lambda p: p.requires_grad, model.parameters())
 
     if global_rank == 0:

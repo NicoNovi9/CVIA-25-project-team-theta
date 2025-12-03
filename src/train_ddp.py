@@ -13,6 +13,7 @@ import deepspeed
 from deepspeed.accelerator import get_accelerator
 
 from models.simple_model import SimpleDetector
+from models.yolo_model import YOLODetector
 from utils.spark_detection_dataset import SparkDetectionDataset
 
 def train_model(model_engine, train_loader, val_loader, num_epochs=100, validation=False):
@@ -192,10 +193,20 @@ if __name__ == "__main__":
 
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    model = SimpleDetector(num_classes=10)
+    model = YOLODetector(num_classes=10)
     parameters = filter(lambda p: p.requires_grad, model.parameters())
 
     if global_rank == 0:
+        print("\n" + "=" * 60)
+        print("MODEL SUMMARY")
+        print("=" * 60)
+        print(f"Model type: {type(model).__name__}")
+        print(f"Model class: {model.__class__.__module__}.{model.__class__.__name__}")
+        total_params = sum(p.numel() for p in model.parameters())
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"Total parameters: {total_params:,}")
+        print(f"Trainable parameters: {trainable_params:,}")
+        print("=" * 60 + "\n")
         print("\nInitializing DeepSpeed...")
     
     model_engine, optimizer, train_loader, _ = deepspeed.initialize(

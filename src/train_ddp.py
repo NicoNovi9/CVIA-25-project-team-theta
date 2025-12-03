@@ -1,12 +1,18 @@
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, Dataset, random_split
 import torchvision.transforms as T
 from torch.utils.data import Subset
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 import os
+
+import datetime
+import time
+import numpy as np
+import deepspeed
+from deepspeed.accelerator import get_accelerator
 
 from models.simple_model import SimpleDetector
 from utils.spark_detection_dataset import SparkDetectionDataset
@@ -35,9 +41,9 @@ if __name__ == "__main__":
     VALIDATION = False
 
     # Initialize DDP
-    local_rank = setup_ddp()
-    world_size = dist.get_world_size()
-    is_main_process = local_rank == 0
+    # local_rank = setup_ddp()
+    # world_size = dist.get_world_size()
+    # is_main_process = local_rank == 0
 
     transform = T.Compose([
         #T.Resize((256, 256)),

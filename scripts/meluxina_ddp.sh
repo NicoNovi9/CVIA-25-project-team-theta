@@ -12,6 +12,7 @@
 #SBATCH --error=meluxina_train.err
 
 module load Python
+module load CUDA/12.6.0
 if [ ! -d "ds_env" ]; then
     python -m venv ds_env
 
@@ -19,6 +20,7 @@ if [ ! -d "ds_env" ]; then
 
     pip install --upgrade pip
     pip install torch torchvision numpy pandas ultralytics
+    pip install deepspeed mpi4py
 fi
 
 source ds_env/bin/activate

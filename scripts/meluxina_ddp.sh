@@ -19,10 +19,6 @@ module load scikit-learn/1.5.2-gfbf-2024a
 module load matplotlib/3.9.2-gfbf-2024a
 module load Seaborn/0.13.2-gfbf-2024a
 
-# module load setuptools/69.5.1-GCCcore-13.3.0
-
-module load CUDA/12.6.0 # non so se serve
-
 module load PyTorch/2.3.0-foss-2024a-CUDA-12.6.0
 module load torchvision/0.18.1-foss-2024a-CUDA-12.6.0
 

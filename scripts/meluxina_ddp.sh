@@ -12,8 +12,16 @@
 #SBATCH --error=meluxina_train.err
 
 module load Python
-echo "Activating virtual environment..."
-source .venv/bin/activate
+if [ ! -d "ds_env" ]; then
+    python -m venv ds_env
+
+    source ds_env/bin/activate
+
+    pip install --upgrade pip
+    pip install torch torchvision numpy pandas ultralytics
+fi
+
+source ds_env/bin/activate
 
 echo "Starting DDP training script on 4 GPUs..."
 torchrun \

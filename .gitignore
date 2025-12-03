@@ -1,4 +1,6 @@
 .venv/
+ds_env/
+deepspeed/
 __pycache__/
 *.err
 *.out

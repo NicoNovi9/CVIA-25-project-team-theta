@@ -19,8 +19,8 @@ from tqdm import tqdm
 import json
 import argparse
 
-from models.unet_model import UNetSegmentor
-from utils.spark_segmentation_dataset import (
+from unet_model import UNetSegmentor
+from dataset_unet import (
     SparkSegmentationDataset, 
     collate_fn_segmentation,
     CLASS_NAMES,

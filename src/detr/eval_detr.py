@@ -25,7 +25,7 @@ from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
-from utils.spark_detection_dataset_detr import SparkDetectionDatasetDETR, collate_fn_detr
+from dataset_detr import SparkDetectionDatasetDETR, collate_fn_detr
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -92,7 +92,7 @@ def main():
     # =========================================================================
     # CONFIGURATION
     # =========================================================================
-    MODEL_PATH = "model_weights/detr_best"
+    MODEL_PATH = "model_weights_DETR_30epochs/detr_best"
     DATA_ROOT = "/project/scratch/p200981/spark2024"
     VAL_CSV = f"{DATA_ROOT}/val.csv"
     IMAGE_ROOT = f"{DATA_ROOT}/images"

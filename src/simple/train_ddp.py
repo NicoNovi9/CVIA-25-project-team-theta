@@ -12,9 +12,9 @@ import numpy as np
 import deepspeed
 from deepspeed.accelerator import get_accelerator
 
-from models.simple_model import SimpleDetector
-from models.yolo_model import YOLODetector
-from utils.spark_detection_dataset import SparkDetectionDataset
+from simple_model import SimpleDetector
+from yolo_model import YOLODetector
+from spark_detection_dataset import SparkDetectionDataset
 
 def train_model(model_engine, train_loader, val_loader, num_epochs=100, validation=False):
     device = model_engine.device
@@ -213,7 +213,7 @@ if __name__ == "__main__":
         model=model,
         model_parameters=parameters,
         training_data=train_dataset,
-        config="scripts/ds_config.json"
+        config="src/simple/ds_config.json"
     )
     
     if global_rank == 0:

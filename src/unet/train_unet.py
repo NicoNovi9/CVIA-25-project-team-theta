@@ -20,8 +20,8 @@ import numpy as np
 import deepspeed
 from deepspeed.accelerator import get_accelerator
 
-from models.unet_model import UNetSegmentor
-from utils.spark_segmentation_dataset import SparkSegmentationDataset, collate_fn_segmentation
+from unet_model import UNetSegmentor
+from dataset_unet import SparkSegmentationDataset, collate_fn_segmentation
 
 import warnings
 warnings.filterwarnings("ignore", message=".*meta parameter.*")
@@ -579,7 +579,7 @@ if __name__ == "__main__":
     model_engine, optimizer, _, _ = deepspeed.initialize(
         model=model,
         model_parameters=parameters,
-        config="scripts/ds_config_unet.json"
+        config="src/unet/ds_config_unet.json"
     )
     
     if global_rank == 0:

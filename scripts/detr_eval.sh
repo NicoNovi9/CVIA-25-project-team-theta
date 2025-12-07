@@ -5,15 +5,21 @@
 #SBATCH --qos=default
 #SBATCH --account=p200981
 
-# === DISTRIBUTED CONFIGURATION ===
-# Single node with 4 GPUs (change --nodes for multi-node)
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
 #SBATCH --cpus-per-task=8
 
-#SBATCH --output=meluxina_eval_detr.out
-#SBATCH --error=meluxina_eval_detr.err
+#SBATCH --output=detr_eval.out
+#SBATCH --error=detr_eval.err
+
+echo "=================================================="
+echo "DETR Evaluation"
+echo "=================================================="
+echo "Job ID: $SLURM_JOB_ID"
+echo "Node: $SLURM_NODELIST"
+echo "Start time: $(date)"
+echo "=================================================="
 
 module load Python/3.11.10-GCCcore-13.3.0
 module load scikit-learn/1.5.2-gfbf-2024a
@@ -31,14 +37,15 @@ pip install pycocotools --quiet
 export MASTER_ADDR=$(scontrol show hostnames $SLURM_JOB_NODELIST | head -n 1)
 export MASTER_PORT=29500
 
-echo "======================================================"
-echo "DETR DISTRIBUTED EVALUATION"
-echo "======================================================"
 echo "Nodes: $SLURM_NNODES"
 echo "Tasks per node: $SLURM_NTASKS_PER_NODE"
 echo "Total GPUs: $(($SLURM_NNODES * $SLURM_NTASKS_PER_NODE))"
 echo "Master: $MASTER_ADDR:$MASTER_PORT"
-echo "======================================================"
 
-# Run with srun for multi-GPU/multi-node
-srun python -u src/eval_detr.py
+# Run DETR evaluation
+srun python -u src/detr/eval_detr.py
+
+echo ""
+echo "=================================================="
+echo "Job completed: $(date)"
+echo "=================================================="

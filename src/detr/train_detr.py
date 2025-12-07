@@ -20,8 +20,8 @@ import numpy as np
 import deepspeed
 from deepspeed.accelerator import get_accelerator
 
-from models.detr_model import DETRDetector
-from utils.spark_detection_dataset_detr import SparkDetectionDatasetDETR, collate_fn_detr
+from detr_model import DETRDetector
+from dataset_detr import SparkDetectionDatasetDETR, collate_fn_detr
 
 import warnings
 warnings.filterwarnings("ignore", message=".*meta parameter.*")
@@ -139,7 +139,7 @@ def train_model_detr(model_engine, train_loader, val_loader, num_epochs=100, val
             epoch_train_loss += loss.item()
             batch_count += 1
 
-            if batch_idx % 40 == 0 and global_rank == 0:
+            if batch_idx % 50 == 0 and global_rank == 0:
                 batch_time = time.time() - start_time_batch
                 print(f'[Epoch {epoch+1:3d}] Batch {batch_idx:4d} | Loss: {loss.item():.4f} | Time: {batch_time:.2f}s')
                 start_time_batch = time.time()
@@ -185,10 +185,10 @@ def train_model_detr(model_engine, train_loader, val_loader, num_epochs=100, val
                     val_batch_count += 1
                     
                     if global_rank == 0:
-                        # if val_batch_idx % 40 == 0 and global_rank == 0:
-                        val_batch_time = time.time() - val_batch_start_time
-                        print(f'[Epoch {epoch+1:3d}] Val Batch {val_batch_idx:4d} | Loss: {loss.item():.4f} | Time: {val_batch_time:.2f}s')
-                        val_batch_start_time = time.time()
+                        if val_batch_idx % 30 == 0 and global_rank == 0:
+                            val_batch_time = time.time() - val_batch_start_time
+                            print(f'[Epoch {epoch+1:3d}] Val Batch {val_batch_idx:4d} | Loss: {loss.item():.4f} | Time: {val_batch_time:.2f}s')
+                            val_batch_start_time = time.time()
             
             torch.cuda.synchronize()
             val_time = time.time() - val_start_time
@@ -315,7 +315,7 @@ if __name__ == "__main__":
     DOWN_SAMPLE = False
     DOWN_SAMPLE_SUBSET = 100
     BATCH_SIZE = 64
-    N_EPOCHS = 2
+    N_EPOCHS = 30
     LEARNING_RATE = 1e-4      # Lower LR for fine-tuning pretrained model
     BACKBONE_LR = 1e-5        # Even lower LR for backbone
     VALIDATION = True
@@ -391,7 +391,7 @@ if __name__ == "__main__":
         batch_size=BATCH_SIZE, 
         shuffle=False,
         sampler=val_sampler,
-        num_workers=4,
+        num_workers=7,
         pin_memory=True,
         collate_fn=collate_fn_detr
     )
@@ -422,7 +422,7 @@ if __name__ == "__main__":
         model=model,
         model_parameters=parameters,
         training_data=train_dataset,
-        config="scripts/ds_config_detr.json",
+        config="src/detr/ds_config_detr.json",
         collate_fn=collate_fn_detr
     )
     

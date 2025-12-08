@@ -1,11 +1,13 @@
 """
 DETR Model wrapper for object detection using HuggingFace Transformers.
 Compatible with DeepSpeed distributed training.
+
+Supports both standard DETR and Conditional DETR via Auto classes.
 """
 
 import torch
 import torch.nn as nn
-from transformers import DetrImageProcessor, DetrForObjectDetection
+from transformers import AutoModelForObjectDetection, AutoImageProcessor
 
 from transformers import logging as hf_logging
 hf_logging.set_verbosity_error()  # suppress unused-weights warnings
@@ -15,33 +17,42 @@ hf_logging.set_verbosity_error()  # suppress unused-weights warnings
 MODEL_NAME = "facebook/detr-resnet-50"  # Pretrained DETR with ResNet-50 backbone
 # Alternative models:
 # - "facebook/detr-resnet-101" (larger backbone)
-# - "microsoft/conditional-detr-resnet-50" (faster convergence)
+# - "microsoft/conditional-detr-resnet-50" (faster convergence, recommended)
 
 
-def load_detr_model(model_name, num_classes, id2label, label2id):
+def load_detr_model(model_name, num_classes, id2label, label2id, shortest_edge=800, longest_edge=1333):
     """
     Load DETR model with pretrained weights and adapt for custom number of classes.
+    
+    Uses AutoModelForObjectDetection to automatically detect the correct model class
+    (e.g., DetrForObjectDetection vs ConditionalDetrForObjectDetection).
     
     Args:
         model_name: HuggingFace model identifier
         num_classes: Number of classes in your dataset
         id2label: Dictionary mapping class ids to class names
         label2id: Dictionary mapping class names to class ids
+        shortest_edge: Target size for the shortest edge during preprocessing
+        longest_edge: Target size for the longest edge during preprocessing
     
     Returns:
         model: DETR model ready for fine-tuning
         image_processor: Image processor for preprocessing
     """
-    # Load image processor without resizing
-    image_processor = DetrImageProcessor.from_pretrained(
+    # Load image processor with configurable resizing
+    # AutoImageProcessor auto-detects the correct processor class
+    image_processor = AutoImageProcessor.from_pretrained(
         model_name,
-        do_resize=False,
+        do_resize=True,
+        size={"shortest_edge": shortest_edge, "longest_edge": longest_edge},
     )
     
     # Load model with custom number of classes
+    # AutoModelForObjectDetection auto-detects the correct model class
+    # (e.g., ConditionalDetrForObjectDetection for microsoft/conditional-detr-*)
     # ignore_mismatched_sizes=True allows loading pretrained weights 
     # even though classification head size differs
-    model = DetrForObjectDetection.from_pretrained(
+    model = AutoModelForObjectDetection.from_pretrained(
         model_name,
         num_labels=num_classes,
         id2label=id2label,
@@ -61,11 +72,13 @@ class DETRDetector(nn.Module):
     own loss internally when labels are provided.
     """
     def __init__(self, num_classes, model_name="facebook/detr-resnet-50", 
-                 id2label=None, label2id=None):
+                 id2label=None, label2id=None, shortest_edge=800, longest_edge=1333):
         super().__init__()
         
         self.num_classes = num_classes
         self.model_name = model_name
+        self.shortest_edge = shortest_edge
+        self.longest_edge = longest_edge
         
         # Create default label mappings if not provided
         if id2label is None:
@@ -81,11 +94,14 @@ class DETRDetector(nn.Module):
             model_name=model_name,
             num_classes=num_classes,
             id2label=id2label,
-            label2id=label2id
+            label2id=label2id,
+            shortest_edge=shortest_edge,
+            longest_edge=longest_edge
         )
         
         print(f"[DETRDetector] Loaded {model_name}")
         print(f"[DETRDetector] Classes: {num_classes}")
+        print(f"[DETRDetector] Image size: shortest_edge={shortest_edge}, longest_edge={longest_edge}")
     
     def forward(self, pixel_values, labels=None):
         """
@@ -139,8 +155,8 @@ class DETRDetector(nn.Module):
     @classmethod
     def from_pretrained(cls, load_path, num_classes=None):
         """Load model and processor from directory."""
-        model = DetrForObjectDetection.from_pretrained(load_path)
-        processor = DetrImageProcessor.from_pretrained(load_path)
+        model = AutoModelForObjectDetection.from_pretrained(load_path)
+        processor = AutoImageProcessor.from_pretrained(load_path)
         
         # Create wrapper instance
         wrapper = cls.__new__(cls)
@@ -151,6 +167,7 @@ class DETRDetector(nn.Module):
         wrapper.id2label = model.config.id2label
         wrapper.label2id = model.config.label2id
         wrapper.model_name = load_path
-        wrapper.image_size = processor.size.get("shortest_edge", 256)
+        wrapper.shortest_edge = processor.size.get("shortest_edge", 800)
+        wrapper.longest_edge = processor.size.get("longest_edge", 1333)
         
         return wrapper

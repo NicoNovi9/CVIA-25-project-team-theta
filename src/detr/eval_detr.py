@@ -20,7 +20,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from transformers import DetrForObjectDetection, DetrImageProcessor
+from transformers import AutoModelForObjectDetection, AutoImageProcessor
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
@@ -92,7 +92,7 @@ def main():
     # =========================================================================
     # CONFIGURATION
     # =========================================================================
-    MODEL_PATH = "model_weights_DETR_30epochs/detr_best"
+    MODEL_PATH = "model_weights/detr_best"
     DATA_ROOT = "/project/scratch/p200981/spark2024"
     VAL_CSV = f"{DATA_ROOT}/val.csv"
     IMAGE_ROOT = f"{DATA_ROOT}/images"
@@ -114,8 +114,13 @@ def main():
     if is_main:
         print(f"\nLoading model from {MODEL_PATH}...")
     
-    model = DetrForObjectDetection.from_pretrained(MODEL_PATH)
-    processor = DetrImageProcessor.from_pretrained(MODEL_PATH)
+    model = AutoModelForObjectDetection.from_pretrained(MODEL_PATH)
+    processor = AutoImageProcessor.from_pretrained(MODEL_PATH)
+    processor.do_resize = True
+    processor.size = {
+        "shortest_edge": 800,
+        "longest_edge": 1333,
+    }
     model.to(device)
     model.eval()
     

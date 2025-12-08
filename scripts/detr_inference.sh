@@ -47,7 +47,7 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 cd ${SLURM_SUBMIT_DIR}
 
 # Paths configuration
-MODEL="model_weights_DETR_30epochs/detr_best"
+MODEL="model_weights/detr_best"
 DATA="/project/scratch/p200981/spark2024_test/detection/images"
 OUTPUT_DIR="submission_output"
 

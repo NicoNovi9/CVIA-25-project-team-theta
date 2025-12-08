@@ -321,6 +321,15 @@ if __name__ == "__main__":
     VALIDATION = True
     PATIENCE = 15
     SAVE_PATH = "model_weights"
+    
+    # Model configuration
+    SHORTEST_EDGE = 800       # Target size for shortest edge during preprocessing
+    LONGEST_EDGE = 1333       # Target size for longest edge during preprocessing
+    MODEL_BACKBONE = "microsoft/conditional-detr-resnet-50"  # Options: "facebook/detr-resnet-50", "facebook/detr-resnet-101"
+    
+    # Resume from checkpoint (set to None to train from scratch, or path to a saved checkpoint)
+    # Oss: use absolute path
+    RESUME_FROM_CHECKPOINT = "/project/home/p200776/u103235/cvia/model_weights/detr_epoch_30"
 
     # ============================================================================
     # LOAD CLASS MAPPINGS FROM CSV
@@ -340,13 +349,36 @@ if __name__ == "__main__":
     # ============================================================================
     if global_rank == 0:
         print("Loading DETR model...")
+        print(f"Backbone: {MODEL_BACKBONE}")
+        print(f"Image size: shortest_edge={SHORTEST_EDGE}, longest_edge={LONGEST_EDGE}")
+        if RESUME_FROM_CHECKPOINT:
+            print(f"Resuming from checkpoint: {RESUME_FROM_CHECKPOINT}")
     
-    model = DETRDetector(
-        num_classes=num_classes,
-        model_name="facebook/detr-resnet-50",
-        id2label=id2label,
-        label2id=label2id
-    )
+    if RESUME_FROM_CHECKPOINT and os.path.exists(RESUME_FROM_CHECKPOINT):
+        # Load model from a previously saved checkpoint
+        model = DETRDetector.from_pretrained(
+            RESUME_FROM_CHECKPOINT,
+            num_classes=num_classes
+        )
+        # Update label mappings in case they differ
+        model.id2label = id2label
+        model.label2id = label2id
+        model.model.config.id2label = id2label
+        model.model.config.label2id = label2id
+        if global_rank == 0:
+            print(f"Loaded checkpoint from: {RESUME_FROM_CHECKPOINT}")
+    else:
+        # Train from scratch using pretrained backbone
+        model = DETRDetector(
+            num_classes=num_classes,
+            id2label=id2label,
+            label2id=label2id,
+            model_name=MODEL_BACKBONE,
+            shortest_edge=SHORTEST_EDGE,
+            longest_edge=LONGEST_EDGE
+        )
+        if RESUME_FROM_CHECKPOINT and global_rank == 0:
+            print(f"WARNING: Checkpoint path '{RESUME_FROM_CHECKPOINT}' not found. Training from scratch.")
     
     if global_rank == 0:
         print("Model loaded successfully!")
@@ -474,11 +506,13 @@ if __name__ == "__main__":
             
             f.write("MODEL CONFIGURATION\n")
             f.write("-" * 70 + "\n")
-            f.write(f"Model: DETRDetector (facebook/detr-resnet-50)\n")
+            f.write(f"Model: DETRDetector ({MODEL_BACKBONE})\n")
+            f.write(f"Image Size: shortest_edge={SHORTEST_EDGE}, longest_edge={LONGEST_EDGE}\n")
             f.write(f"Number of Classes: {num_classes}\n")
             f.write(f"Learning Rate: {LEARNING_RATE}\n")
             f.write(f"Backbone LR: {BACKBONE_LR}\n")
-            f.write(f"Device: {model_engine.device}\n\n")
+            f.write(f"Device: {model_engine.device}\n")
+            f.write(f"Resumed from: {RESUME_FROM_CHECKPOINT if RESUME_FROM_CHECKPOINT else 'N/A (trained from scratch)'}\n\n")
             
             f.write("TRAINING PERFORMANCE\n")
             f.write("-" * 70 + "\n")

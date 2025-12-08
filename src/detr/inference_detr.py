@@ -26,7 +26,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from PIL import Image
-from transformers import DetrForObjectDetection, DetrImageProcessor
+from transformers import AutoModelForObjectDetection, AutoImageProcessor
 
 
 def parse_args():
@@ -274,8 +274,8 @@ def main():
     
     # Load detection model
     print(f"Loading detection model from {args.model_path}...")
-    detection_model = DetrForObjectDetection.from_pretrained(args.model_path)
-    processor = DetrImageProcessor.from_pretrained(args.model_path)
+    detection_model = AutoModelForObjectDetection.from_pretrained(args.model_path)
+    processor = AutoImageProcessor.from_pretrained(args.model_path)
     
     # Use DataParallel if multiple GPUs
     if num_gpus > 1:

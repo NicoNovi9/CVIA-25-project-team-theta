@@ -560,7 +560,7 @@ if __name__ == "__main__":
     # Training settings (can be overridden by env vars for benchmarking)
     # Enable downsampling from env var or --benchmark flag
     DOWN_SAMPLE = args.benchmark or os.environ.get('DOWNSAMPLE', '0') == '1'
-    DOWN_SAMPLE_SUBSET = 1000  # Number of samples when downsampling is enabled
+    DOWN_SAMPLE_RATIO = 0.10  # Take 10% of dataset when downsampling (balanced across classes)
     TARGET_SIZE = (512, 512)  # Reduced from 1024 for faster training
     VALIDATION = True
     VALIDATE_EVERY = 2  # Run validation every N epochs
@@ -615,8 +615,51 @@ if __name__ == "__main__":
     )
 
     if DOWN_SAMPLE:
-        train_dataset = Subset(train_dataset, range(min(DOWN_SAMPLE_SUBSET, len(train_dataset))))
-        val_dataset = Subset(val_dataset, range(min(DOWN_SAMPLE_SUBSET // 10, len(val_dataset))))
+        # Stratified sampling to maintain class balance
+        # Get class labels from the underlying dataset
+        df_train = train_dataset.df
+        df_val = val_dataset.df
+        
+        # Calculate samples per class (10% of each class)
+        train_indices = []
+        val_indices = []
+        
+        for satellite_class in df_train['Class'].unique():
+            # Get indices for this class
+            class_mask = df_train['Class'] == satellite_class
+            class_indices = np.where(class_mask)[0]
+            
+            # Take DOWN_SAMPLE_RATIO of samples from this class
+            n_samples = int(len(class_indices) * DOWN_SAMPLE_RATIO)
+            n_samples = max(1, n_samples)  # At least 1 sample per class
+            
+            # Randomly sample (with fixed seed for reproducibility)
+            np.random.seed(42)
+            selected = np.random.choice(class_indices, size=n_samples, replace=False)
+            train_indices.extend(selected.tolist())
+        
+        for satellite_class in df_val['Class'].unique():
+            class_mask = df_val['Class'] == satellite_class
+            class_indices = np.where(class_mask)[0]
+            
+            n_samples = int(len(class_indices) * DOWN_SAMPLE_RATIO)
+            n_samples = max(1, n_samples)
+            
+            np.random.seed(42)
+            selected = np.random.choice(class_indices, size=n_samples, replace=False)
+            val_indices.extend(selected.tolist())
+        
+        # Shuffle indices
+        np.random.seed(42)
+        np.random.shuffle(train_indices)
+        np.random.shuffle(val_indices)
+        
+        train_dataset = Subset(train_dataset, train_indices)
+        val_dataset = Subset(val_dataset, val_indices)
+        
+        if global_rank == 0:
+            print(f"[Stratified Downsampling] Train: {len(train_indices)} samples, Val: {len(val_indices)} samples")
+            print(f"[Stratified Downsampling] Ratio: {DOWN_SAMPLE_RATIO*100:.0f}% per class")
 
     if global_rank == 0:
         print(f"Data prepared: train samples = {len(train_dataset)}, val samples = {len(val_dataset)}")

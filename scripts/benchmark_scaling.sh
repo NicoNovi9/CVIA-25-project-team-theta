@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH --job-name=scaling
-#SBATCH --time=4:00:00
+#SBATCH --time=20:00:00
 #SBATCH --partition=cpu
 #SBATCH --qos=default
 #SBATCH --account=p200776
@@ -28,9 +28,9 @@
 
 # ----- Configuration -----
 DOWNSAMPLE=1   # 1 = use subset for quick testing, 0 = use full dataset
-ZERO_STAGE=1   # DeepSpeed ZeRO optimization stage: 0, 1, 2, or 3
+ZERO_STAGE=2   # DeepSpeed ZeRO optimization stage: 0, 1, 2, or 3
 FP16=0         # FP16 mixed precision: 1 = enabled, 0 = disabled
-EPOCHS=2       # Number of epochs per benchmark run
+EPOCHS=20      # Number of epochs per benchmark run
 
 # ----- Paths -----
 RESULTS_DIR="benchmark_results"

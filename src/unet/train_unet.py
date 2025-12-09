@@ -286,16 +286,17 @@ def train_model_unet(model_engine, train_loader, val_loader, train_sampler=None,
             epoch_train_dice += dice
             batch_count += 1
 
-            if batch_idx % 40 == 0 and global_rank == 0:
-                batch_time = time.time() - start_time_batch
-                print(f'[Epoch {epoch+1:3d}] Batch {batch_idx:4d} | Loss: {loss.item():.4f} | IoU: {iou:.4f} | Dice: {dice:.4f} | Time: {batch_time:.2f}s')
-                start_time_batch = time.time()
-                
-                # Sample GPU stats during training (every 40 batches)
+            # Sample GPU stats more frequently for accurate benchmarking (every 5 batches)
+            if batch_idx % 5 == 0 and global_rank == 0:
                 gpu_stats = get_gpu_stats()
                 gpu_utilizations_all.append(gpu_stats['gpu_util_avg'])
                 gpu_memory_usages_all.append(gpu_stats['gpu_mem_used_mb'])
                 gpu_power_draws_all.append(gpu_stats['gpu_power_w'])
+
+            if batch_idx % 20 == 0 and global_rank == 0:
+                batch_time = time.time() - start_time_batch
+                print(f'[Epoch {epoch+1:3d}] Batch {batch_idx:4d} | Loss: {loss.item():.4f} | IoU: {iou:.4f} | Dice: {dice:.4f} | Time: {batch_time:.2f}s')
+                start_time_batch = time.time()
             
             data_load_start = time.time()
         

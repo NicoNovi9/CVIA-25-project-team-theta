@@ -273,7 +273,7 @@ def train_model_unet(model_engine, train_loader, val_loader, train_sampler=None,
             batch_count += 1
 
             # Sample GPU stats more frequently for accurate benchmarking (every 5 batches)
-            if batch_idx % 1 == 0 and global_rank == 0:
+            if batch_idx % 5 == 0 and global_rank == 0:
                 gpu_stats = get_gpu_stats(device)
                 gpu_utilizations_all.append(gpu_stats['gpu_util_avg'])
                 gpu_memory_usages_all.append(gpu_stats['gpu_mem_used_mb'])
@@ -750,6 +750,9 @@ if __name__ == "__main__":
             'num_gpus': world_size,
             'batch_size_per_gpu': BATCH_SIZE,
             'global_batch_size': BATCH_SIZE * world_size,
+            'gradient_accumulation_steps': ds_config.get('gradient_accumulation_steps', 1),
+            'fp16_enabled': ds_config.get('fp16', {}).get('enabled', False),
+            'zero_optimization_stage': ds_config.get('zero_optimization', {}).get('stage', 0),
             'train_samples': len(train_dataset),
             'val_samples': len(val_dataset),
             'image_size': TARGET_SIZE,

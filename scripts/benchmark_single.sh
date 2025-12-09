@@ -3,10 +3,10 @@
 # Usage: ./benchmark_single.sh <num_gpus> <num_nodes> <tasks_per_node> <batch_per_gpu>
 # Example: ./benchmark_single.sh 4 1 4 8
 
-NUM_GPUS=${1:-4}
+NUM_GPUS=${1:-1}
 NUM_NODES=${2:-1}
-TASKS_PER_NODE=${3:-4}
-BATCH_PER_GPU=${4:-16}
+TASKS_PER_NODE=${3:-1}
+BATCH_PER_GPU=${4:-32}
 EPOCHS=${5:-1}
 
 GLOBAL_BATCH=$((NUM_GPUS * BATCH_PER_GPU))

@@ -5,7 +5,7 @@
 # Configuration
 RESULTS_DIR="benchmark_results"
 RESULTS_FILE="${RESULTS_DIR}/strong_scaling_$(date +%Y%m%d_%H%M%S).csv"
-EPOCHS=3  # Short runs for benchmarking
+EPOCHS=2  # Short runs for benchmarking
 
 # Create results directory
 mkdir -p ${RESULTS_DIR}
@@ -93,8 +93,13 @@ echo 'Benchmark completed in '\$total_time' seconds'
     echo "Job submitted: ${job_id}"
     echo ""
     
-    # Wait a bit between submissions to avoid overload
-    sleep 2
+    # Wait for job to complete before submitting next one
+    echo "Waiting for job ${job_id} to complete..."
+    while squeue -j ${job_id} 2>/dev/null | grep -q ${job_id}; do
+        sleep 10
+    done
+    echo "Job ${job_id} completed."
+    echo ""
 done
 
 echo "=========================================="

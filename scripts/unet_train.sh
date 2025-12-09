@@ -43,7 +43,20 @@ fi
 
 source ds_env/bin/activate
 
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+# Set CUDA_VISIBLE_DEVICES dynamically based on SLURM allocation
+# This ensures nvidia-smi only sees the GPUs actually being used
+GPUS_PER_NODE=$((SLURM_NTASKS_PER_NODE * 1))  # 1 GPU per task
+if [ "$GPUS_PER_NODE" -eq 1 ]; then
+    export CUDA_VISIBLE_DEVICES=0
+elif [ "$GPUS_PER_NODE" -eq 2 ]; then
+    export CUDA_VISIBLE_DEVICES=0,1
+elif [ "$GPUS_PER_NODE" -eq 3 ]; then
+    export CUDA_VISIBLE_DEVICES=0,1,2
+else
+    export CUDA_VISIBLE_DEVICES=0,1,2,3
+fi
+
+echo "CUDA_VISIBLE_DEVICES set to: $CUDA_VISIBLE_DEVICES"
 
 NODES=$SLURM_JOB_NUM_NODES
 TASKS_PER_NODE=$SLURM_NTASKS_PER_NODE

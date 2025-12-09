@@ -2,6 +2,7 @@
 ds_env/
 deepspeed/
 __pycache__/
+model_weights_unet/
 *.err
 *.out
 *.pth

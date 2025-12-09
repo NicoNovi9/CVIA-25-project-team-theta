@@ -33,21 +33,40 @@ CLASS_NAMES = ["background", "spacecraft_body", "solar_panels"]
 
 
 def get_gpu_stats():
-    """Get GPU utilization, memory usage and power draw using nvidia-smi."""
+    """Get GPU utilization, memory usage and power draw using nvidia-smi.
+    
+    Only queries GPUs visible to this process (respects CUDA_VISIBLE_DEVICES).
+    """
     try:
+        # Get the GPU indices that are visible to this process
+        cuda_visible = os.environ.get('CUDA_VISIBLE_DEVICES', None)
+        
+        if cuda_visible is not None and cuda_visible != '':
+            # Query only the specific GPUs assigned to this process
+            gpu_indices = cuda_visible.split(',')
+            gpu_id_arg = f"--id={cuda_visible}"
+        else:
+            # Fallback: use local_rank to get the current GPU
+            local_rank = int(os.environ.get('LOCAL_RANK', 0))
+            gpu_id_arg = f"--id={local_rank}"
+            gpu_indices = [str(local_rank)]
+        
         result = subprocess.run(
-            ['nvidia-smi', '--query-gpu=utilization.gpu,memory.used,memory.total,power.draw', 
+            ['nvidia-smi', gpu_id_arg,
+             '--query-gpu=utilization.gpu,memory.used,memory.total,power.draw', 
              '--format=csv,noheader,nounits'],
             capture_output=True, text=True, timeout=1
         )
         if result.returncode == 0:
             lines = result.stdout.strip().split('\n')
-            # Average across all GPUs
+            # Average across only the GPUs we're actually using
             gpu_utils = []
             mem_useds = []
             mem_totals = []
             powers = []
             for line in lines:
+                if not line.strip():
+                    continue
                 parts = line.split(',')
                 if len(parts) == 4:
                     gpu_utils.append(float(parts[0].strip()))

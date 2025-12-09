@@ -23,17 +23,21 @@
 # Configuration:
 #   DOWNSAMPLE - Set to 1 to use a small subset of data (200 samples) for quick tests
 #                Set to 0 to use the full dataset
+#   ZERO_STAGE - DeepSpeed ZeRO optimization stage (0, 1, 2, or 3)
+#   FP16       - Enable FP16 mixed precision (1 = enabled, 0 = disabled)
 # =============================================================================
 
 # ----- Configuration -----
-DOWNSAMPLE=1  # 1 = use 200 samples for quick testing, 0 = use full dataset
+DOWNSAMPLE=0  # 1 = use 200 samples for quick testing, 0 = use full dataset
+ZERO_STAGE=2  # DeepSpeed ZeRO optimization stage: 0, 1, 2, or 3
+FP16=0        # FP16 mixed precision: 1 = enabled, 0 = disabled
 
 # ----- Arguments -----
 NUM_GPUS=${1:-4}
 NUM_NODES=${2:-1}
 TASKS_PER_NODE=${3:-4}
 BATCH_PER_GPU=${4:-8}
-EPOCHS=${5:-1}
+EPOCHS=${5:-2}
 
 GLOBAL_BATCH=$((NUM_GPUS * BATCH_PER_GPU))
 RESULTS_DIR="benchmark_results"
@@ -60,7 +64,7 @@ sbatch --job-name=bench_${NUM_GPUS}gpu \
     --account=p200776 \
     --output=${RESULTS_DIR}/bench_${NUM_GPUS}gpu_%j.out \
     --error=${RESULTS_DIR}/bench_${NUM_GPUS}gpu_%j.err \
-    --export=ALL,BATCH_SIZE=${BATCH_PER_GPU},N_EPOCHS=${EPOCHS},DOWNSAMPLE=${DOWNSAMPLE} \
+    --export=ALL,BATCH_SIZE=${BATCH_PER_GPU},N_EPOCHS=${EPOCHS},DOWNSAMPLE=${DOWNSAMPLE},ZERO_STAGE=${ZERO_STAGE},FP16=${FP16} \
     scripts/unet_train.sh
 
     # p200776

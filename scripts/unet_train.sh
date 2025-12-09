@@ -22,11 +22,12 @@ echo "Node: $SLURM_NODELIST"
 echo "Start time: $(date)"
 echo "=================================================="
 
+# Purge modules to avoid conflicts, then load fresh
+module purge
 module load Python/3.11.10-GCCcore-13.3.0
 module load scikit-learn/1.5.2-gfbf-2024a
 module load matplotlib/3.9.2-gfbf-2024a
 module load Seaborn/0.13.2-gfbf-2024a
-
 module load PyTorch/2.3.0-foss-2024a-CUDA-12.6.0
 module load torchvision/0.18.1-foss-2024a-CUDA-12.6.0
 

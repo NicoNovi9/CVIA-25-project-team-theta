@@ -527,6 +527,24 @@ if __name__ == "__main__":
     else:
         BATCH_SIZE = ds_config.get('train_micro_batch_size_per_gpu', 8)
     
+    # Override ZeRO stage from environment if provided
+    if 'ZERO_STAGE' in os.environ:
+        zero_stage = int(os.environ['ZERO_STAGE'])
+        if 'zero_optimization' not in ds_config:
+            ds_config['zero_optimization'] = {}
+        ds_config['zero_optimization']['stage'] = zero_stage
+        if global_rank == 0:
+            print(f"Overriding ZeRO stage from env: {zero_stage}")
+    
+    # Override FP16 from environment if provided
+    if 'FP16' in os.environ:
+        fp16_enabled = os.environ['FP16'] == '1'
+        if 'fp16' not in ds_config:
+            ds_config['fp16'] = {'enabled': False}
+        ds_config['fp16']['enabled'] = fp16_enabled
+        if global_rank == 0:
+            print(f"Overriding FP16 from env: {fp16_enabled}")
+    
     # Override epochs from environment if provided
     N_EPOCHS = int(os.environ.get('N_EPOCHS', 30))
     
@@ -747,7 +765,9 @@ if __name__ == "__main__":
             'end_time': training_stats['training_end_time'].strftime('%Y-%m-%d %H:%M:%S'),
             'total_duration_sec': total_duration,
             'num_epochs': len(training_stats['train_losses']),
+            'num_nodes': int(os.environ.get('SLURM_JOB_NUM_NODES', 1)),
             'num_gpus': world_size,
+            'gpus_per_node': world_size // int(os.environ.get('SLURM_JOB_NUM_NODES', 1)),
             'batch_size_per_gpu': BATCH_SIZE,
             'global_batch_size': BATCH_SIZE * world_size,
             'gradient_accumulation_steps': ds_config.get('gradient_accumulation_steps', 1),

@@ -25,10 +25,52 @@ from dataset_unet import SparkSegmentationDataset, collate_fn_segmentation
 
 import warnings
 warnings.filterwarnings("ignore", message=".*meta parameter.*")
+import subprocess
 
 # Segmentation classes
 NUM_CLASSES = 3
 CLASS_NAMES = ["background", "spacecraft_body", "solar_panels"]
+
+
+def get_gpu_stats():
+    """Get GPU utilization, memory usage and power draw using nvidia-smi."""
+    try:
+        result = subprocess.run(
+            ['nvidia-smi', '--query-gpu=utilization.gpu,memory.used,memory.total,power.draw', 
+             '--format=csv,noheader,nounits'],
+            capture_output=True, text=True, timeout=1
+        )
+        if result.returncode == 0:
+            lines = result.stdout.strip().split('\n')
+            # Average across all GPUs
+            gpu_utils = []
+            mem_useds = []
+            mem_totals = []
+            powers = []
+            for line in lines:
+                parts = line.split(',')
+                if len(parts) == 4:
+                    gpu_utils.append(float(parts[0].strip()))
+                    mem_useds.append(float(parts[1].strip()))
+                    mem_totals.append(float(parts[2].strip()))
+                    powers.append(float(parts[3].strip()))
+            
+            return {
+                'gpu_util_avg': np.mean(gpu_utils) if gpu_utils else 0,
+                'gpu_mem_used_mb': np.mean(mem_useds) if mem_useds else 0,
+                'gpu_mem_total_mb': np.mean(mem_totals) if mem_totals else 0,
+                'gpu_power_w': np.mean(powers) if powers else 0,
+                'num_gpus_detected': len(gpu_utils)
+            }
+    except Exception as e:
+        pass
+    return {
+        'gpu_util_avg': 0,
+        'gpu_mem_used_mb': 0,
+        'gpu_mem_total_mb': 0,
+        'gpu_power_w': 0,
+        'num_gpus_detected': 0
+    }
 
 
 def compute_iou_multiclass(pred, target, num_classes=NUM_CLASSES, ignore_background=False):
@@ -123,6 +165,9 @@ def train_model_unet(model_engine, train_loader, val_loader, train_sampler=None,
     val_dices = []
     epoch_times = []
     learning_rates = []
+    gpu_utilizations_all = []  # Collect multiple samples per epoch
+    gpu_memory_usages_all = []
+    gpu_power_draws_all = []
     training_start_time = datetime.datetime.now()
     
     # Early stopping
@@ -226,6 +271,12 @@ def train_model_unet(model_engine, train_loader, val_loader, train_sampler=None,
                 batch_time = time.time() - start_time_batch
                 print(f'[Epoch {epoch+1:3d}] Batch {batch_idx:4d} | Loss: {loss.item():.4f} | IoU: {iou:.4f} | Dice: {dice:.4f} | Time: {batch_time:.2f}s')
                 start_time_batch = time.time()
+                
+                # Sample GPU stats during training (every 40 batches)
+                gpu_stats = get_gpu_stats()
+                gpu_utilizations_all.append(gpu_stats['gpu_util_avg'])
+                gpu_memory_usages_all.append(gpu_stats['gpu_mem_used_mb'])
+                gpu_power_draws_all.append(gpu_stats['gpu_power_w'])
             
             data_load_start = time.time()
         
@@ -427,6 +478,9 @@ def train_model_unet(model_engine, train_loader, val_loader, train_sampler=None,
         'val_dices': val_dices,
         'epoch_times': epoch_times,
         'learning_rates': learning_rates,
+        'gpu_utilizations': gpu_utilizations_all,
+        'gpu_memory_usages': gpu_memory_usages_all,
+        'gpu_power_draws': gpu_power_draws_all,
         'training_start_time': training_start_time,
         'training_end_time': datetime.datetime.now(),
         'best_val_loss': best_val_loss,
@@ -437,24 +491,51 @@ def train_model_unet(model_engine, train_loader, val_loader, train_sampler=None,
 
 
 if __name__ == "__main__":
+    import argparse
+    import json
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--deepspeed', action='store_true')
+    parser.add_argument('--benchmark', action='store_true', help='Enable benchmark mode')
+    args = parser.parse_args()
+    
     deepspeed.init_distributed()
     
     global_rank = dist.get_rank()
+    world_size = dist.get_world_size()
 
     # ============================================================================
-    # CONFIGURATION
+    # CONFIGURATION - Load and potentially modify DeepSpeed config
     # ============================================================================
+    DS_CONFIG_PATH = "src/unet/ds_config_unet.json"
+    
+    # Load DeepSpeed config
+    with open(DS_CONFIG_PATH, 'r') as f:
+        ds_config = json.load(f)
+    
+    # Override batch size from environment if provided (for benchmarks)
+    if 'BATCH_SIZE' in os.environ:
+        BATCH_SIZE = int(os.environ['BATCH_SIZE'])
+        ds_config['train_micro_batch_size_per_gpu'] = BATCH_SIZE
+        if global_rank == 0:
+            print(f"Overriding batch size from env: {BATCH_SIZE}")
+    else:
+        BATCH_SIZE = ds_config.get('train_micro_batch_size_per_gpu', 8)
+    
+    # Override epochs from environment if provided
+    N_EPOCHS = int(os.environ.get('N_EPOCHS', 30))
+    
+    # Update scheduler total_num_steps based on dataset size and epochs
+    # (will be updated after dataset loading)
+    
     DATA_ROOT = "/project/scratch/p200981/spark2024"
     TRAIN_CSV = f"{DATA_ROOT}/train.csv"
     VAL_CSV = f"{DATA_ROOT}/val.csv"
     IMAGE_ROOT = f"{DATA_ROOT}/images"
     MASK_ROOT = f"{DATA_ROOT}/mask"
     
-    # Training settings
-    DOWN_SAMPLE = False
-    DOWN_SAMPLE_SUBSET = 100
-    BATCH_SIZE = 8
-    N_EPOCHS = 30
+    # Training settings (can be overridden by env vars for benchmarking)
+    DOWN_SAMPLE = args.benchmark  # Auto-enable for benchmarks
+    DOWN_SAMPLE_SUBSET = 100 if args.benchmark else 100
     TARGET_SIZE = (512, 512)  # Reduced from 1024 for faster training
     VALIDATION = True
     VALIDATE_EVERY = 2  # Run validation every N epochs
@@ -514,6 +595,14 @@ if __name__ == "__main__":
 
     if global_rank == 0:
         print(f"Data prepared: train samples = {len(train_dataset)}, val samples = {len(val_dataset)}")
+    
+    # Update DeepSpeed config scheduler based on actual dataset size
+    steps_per_epoch = len(train_dataset) // (BATCH_SIZE * world_size)
+    total_steps = steps_per_epoch * N_EPOCHS
+    ds_config['scheduler']['params']['total_num_steps'] = total_steps
+    
+    if global_rank == 0:
+        print(f"⚙️  Updated scheduler total_num_steps to {total_steps} ({steps_per_epoch} steps/epoch × {N_EPOCHS} epochs)")
 
     # Create validation loader with DistributedSampler
     val_sampler = DistributedSampler(
@@ -579,17 +668,32 @@ if __name__ == "__main__":
     model_engine, optimizer, _, _ = deepspeed.initialize(
         model=model,
         model_parameters=parameters,
-        config="src/unet/ds_config_unet.json"
+        config=ds_config  # Use modified config dict instead of file path
     )
     
     if global_rank == 0:
         print("DeepSpeed initialization completed.\n")
-        print(f"Type of train_loader: {type(train_loader)}")
+        print(f"Effective batch size per GPU: {BATCH_SIZE}")
+        print(f"Global batch size: {BATCH_SIZE * world_size}")
+        print(f"Gradient accumulation steps: {ds_config.get('gradient_accumulation_steps', 1)}")
+        print(f"Type of train_loader: {type(train_loader)}\n")
     
     # ============================================================================
     # TRAINING
     # ============================================================================
     training_start = datetime.datetime.now()
+    
+    if global_rank == 0 and args.benchmark:
+        print("\n" + "=" * 60)
+        print("BENCHMARK MODE")
+        print("=" * 60)
+        print(f"World size: {world_size} GPUs")
+        print(f"Batch per GPU: {BATCH_SIZE}")
+        print(f"Global batch size: {BATCH_SIZE * world_size}")
+        print(f"Epochs: {N_EPOCHS}")
+        print(f"Dataset samples: {len(train_dataset)}")
+        print("=" * 60 + "\n")
+    
     model, training_stats = train_model_unet(
         model_engine, 
         train_loader, 
@@ -606,75 +710,89 @@ if __name__ == "__main__":
         print("\n" + "=" * 60)
         print("TRAINING COMPLETED SUCCESSFULLY")
         print("=" * 60)
+        
+        if args.benchmark:
+            total_time = (training_stats['training_end_time'] - training_stats['training_start_time']).total_seconds()
+            avg_epoch_time = np.mean(training_stats['epoch_times'])
+            print("\nBENCHMARK RESULTS:")
+            print(f"Total time: {total_time:.2f}s")
+            print(f"Avg epoch time: {avg_epoch_time:.2f}s")
+            print(f"Throughput: {len(train_dataset) / avg_epoch_time:.2f} samples/sec/epoch")
 
     # ============================================================================
-    # SAVE TRAINING REPORT
+    # SAVE TRAINING REPORT (CSV)
     # ============================================================================
     if global_rank == 0:
-        report_dir = "training_reports"
+        import csv
+        report_dir = "benchmark_results"
         os.makedirs(report_dir, exist_ok=True) 
-        report_file = f"training_report_unet_{training_start.strftime('%Y%m%d_%H%M%S')}.txt"
+        csv_file = os.path.join(report_dir, "training_summary.csv")
         
-        with open(os.path.join(report_dir, report_file), 'w') as f:
-            f.write("=" * 70 + "\n")
-            f.write("TRAINING REPORT - UNet Segmentation Model\n")
-            f.write("=" * 70 + "\n\n")
-            
-            f.write("GENERAL INFORMATION\n")
-            f.write("-" * 70 + "\n")
-            f.write(f"Training Start: {training_stats['training_start_time'].strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"Training End:   {training_stats['training_end_time'].strftime('%Y-%m-%d %H:%M:%S')}\n")
-            total_duration = (training_stats['training_end_time'] - training_stats['training_start_time']).total_seconds()
-            f.write(f"Total Duration: {total_duration/3600:.2f} hours ({total_duration/60:.2f} minutes)\n")
-            f.write(f"Number of Epochs: {len(training_stats['train_losses'])}\n")
-            f.write(f"Batch Size: {BATCH_SIZE}\n")
-            f.write(f"Image Size: {TARGET_SIZE}\n")
-            f.write(f"Train Samples: {len(train_dataset)}\n")
-            f.write(f"Val Samples: {len(val_dataset)}\n\n")
-            
-            f.write("MODEL CONFIGURATION\n")
-            f.write("-" * 70 + "\n")
-            f.write(f"Model: UNetSegmentor\n")
-            f.write(f"Input Channels: {N_CHANNELS}\n")
-            f.write(f"Output Classes: {N_CLASSES}\n")
-            f.write(f"Tiny Model: {USE_TINY_MODEL}\n")
-            f.write(f"Device: {model_engine.device}\n\n")
-            
-            f.write("TRAINING PERFORMANCE\n")
-            f.write("-" * 70 + "\n")
-            f.write(f"Final Train Loss: {training_stats['train_losses'][-1]:.6f}\n")
-            f.write(f"Final Train IoU:  {training_stats['train_ious'][-1]:.6f}\n")
-            f.write(f"Final Train Dice: {training_stats['train_dices'][-1]:.6f}\n")
-            if VALIDATION and training_stats['val_losses']:
-                f.write(f"Final Val Loss:   {training_stats['val_losses'][-1]:.6f}\n")
-                f.write(f"Final Val IoU:    {training_stats['val_ious'][-1]:.6f}\n")
-                f.write(f"Final Val Dice:   {training_stats['val_dices'][-1]:.6f}\n")
-            f.write(f"Best Val Loss:    {training_stats['best_val_loss']:.6f}\n")
-            f.write(f"Best Val IoU:     {training_stats['best_val_iou']:.6f}\n")
-            f.write(f"Average Epoch Time: {np.mean(training_stats['epoch_times']):.2f}s\n")
-            f.write(f"Final Learning Rate: {training_stats['learning_rates'][-1]:.2e}\n\n")
-            
-            f.write("EPOCH DETAILS\n")
-            f.write("-" * 70 + "\n")
-            f.write(f"{'Epoch':>6} | {'Train Loss':>10} | {'Train IoU':>9} | {'Val Loss':>10} | {'Val IoU':>9} | {'Time':>8}\n")
-            f.write("-" * 70 + "\n")
-            for i in range(len(training_stats['train_losses'])):
-                val_loss_str = f"{training_stats['val_losses'][i]:.4f}" if i < len(training_stats['val_losses']) else "N/A"
-                val_iou_str = f"{training_stats['val_ious'][i]:.4f}" if i < len(training_stats['val_ious']) else "N/A"
-                f.write(f"{i+1:6d} | {training_stats['train_losses'][i]:10.4f} | {training_stats['train_ious'][i]:9.4f} | "
-                       f"{val_loss_str:>10} | {val_iou_str:>9} | {training_stats['epoch_times'][i]:8.2f}\n")
-            
-            f.write("\n" + "=" * 70 + "\n")
+        # Check if file exists to determine if we need to write header
+        file_exists = os.path.isfile(csv_file)
         
-        print(f"\nTraining report saved to: {report_file}\n")
+        total_duration = (training_stats['training_end_time'] - training_stats['training_start_time']).total_seconds()
         
-        np.savez(os.path.join(report_dir, f"training_data_unet_{training_start.strftime('%Y%m%d_%H%M%S')}.npz"),
-                 train_losses=np.array(training_stats['train_losses']),
-                 val_losses=np.array(training_stats['val_losses']),
-                 train_ious=np.array(training_stats['train_ious']),
-                 val_ious=np.array(training_stats['val_ious']),
-                 train_dices=np.array(training_stats['train_dices']),
-                 val_dices=np.array(training_stats['val_dices']),
-                 epoch_times=np.array(training_stats['epoch_times']),
-                 learning_rates=np.array(training_stats['learning_rates']))
-        print(f"Training data saved to: training_data_unet_{training_start.strftime('%Y%m%d_%H%M%S')}.npz\n")
+        # Aggregate metrics
+        summary = {
+            'timestamp': training_start.strftime('%Y%m%d_%H%M%S'),
+            'start_time': training_stats['training_start_time'].strftime('%Y-%m-%d %H:%M:%S'),
+            'end_time': training_stats['training_end_time'].strftime('%Y-%m-%d %H:%M:%S'),
+            'total_duration_sec': total_duration,
+            'num_epochs': len(training_stats['train_losses']),
+            'num_gpus': world_size,
+            'batch_size_per_gpu': BATCH_SIZE,
+            'global_batch_size': BATCH_SIZE * world_size,
+            'train_samples': len(train_dataset),
+            'val_samples': len(val_dataset),
+            'image_size': TARGET_SIZE,
+            'num_classes': N_CLASSES,
+            'tiny_model': USE_TINY_MODEL,
+            
+            # Final metrics
+            'final_train_loss': training_stats['train_losses'][-1],
+            'final_train_iou': training_stats['train_ious'][-1],
+            'final_train_dice': training_stats['train_dices'][-1],
+            'final_val_loss': training_stats['val_losses'][-1] if training_stats['val_losses'] else None,
+            'final_val_iou': training_stats['val_ious'][-1] if training_stats['val_ious'] else None,
+            'final_val_dice': training_stats['val_dices'][-1] if training_stats['val_dices'] else None,
+            
+            # Best metrics
+            'best_val_loss': training_stats['best_val_loss'],
+            'best_val_iou': training_stats['best_val_iou'],
+            
+            # Average metrics
+            'avg_train_loss': np.mean(training_stats['train_losses']),
+            'avg_train_iou': np.mean(training_stats['train_ious']),
+            'avg_train_dice': np.mean(training_stats['train_dices']),
+            'avg_val_loss': np.mean(training_stats['val_losses']) if training_stats['val_losses'] else None,
+            'avg_val_iou': np.mean(training_stats['val_ious']) if training_stats['val_ious'] else None,
+            'avg_val_dice': np.mean(training_stats['val_dices']) if training_stats['val_dices'] else None,
+            
+            # Timing metrics
+            'avg_epoch_time_sec': np.mean(training_stats['epoch_times']),
+            'min_epoch_time_sec': np.min(training_stats['epoch_times']),
+            'max_epoch_time_sec': np.max(training_stats['epoch_times']),
+            'total_epoch_time_sec': np.sum(training_stats['epoch_times']),
+            'samples_per_sec': len(train_dataset) / np.mean(training_stats['epoch_times']),
+            
+            # Learning rate
+            'initial_lr': training_stats['learning_rates'][0],
+            'final_lr': training_stats['learning_rates'][-1],
+            
+            # GPU metrics (averaged across epochs)
+            'avg_gpu_utilization_pct': np.mean(training_stats['gpu_utilizations']) if training_stats['gpu_utilizations'] else None,
+            'max_gpu_utilization_pct': np.max(training_stats['gpu_utilizations']) if training_stats['gpu_utilizations'] else None,
+            'avg_gpu_memory_mb': np.mean(training_stats['gpu_memory_usages']) if training_stats['gpu_memory_usages'] else None,
+            'max_gpu_memory_mb': np.max(training_stats['gpu_memory_usages']) if training_stats['gpu_memory_usages'] else None,
+            'avg_gpu_power_w': np.mean(training_stats['gpu_power_draws']) if training_stats['gpu_power_draws'] else None,
+            'max_gpu_power_w': np.max(training_stats['gpu_power_draws']) if training_stats['gpu_power_draws'] else None,
+        }
+        
+        with open(csv_file, 'a', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=summary.keys())
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(summary)
+        
+        print(f"\n📊 Training summary appended to: {csv_file}\n")

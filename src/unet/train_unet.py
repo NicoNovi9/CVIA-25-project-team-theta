@@ -32,55 +32,41 @@ NUM_CLASSES = 3
 CLASS_NAMES = ["background", "spacecraft_body", "solar_panels"]
 
 
-def get_gpu_stats():
-    """Get GPU utilization, memory usage and power draw using nvidia-smi.
+def get_gpu_stats(device=None):
+    """Get GPU utilization, memory usage and power draw.
     
-    Only queries GPUs visible to this process (respects CUDA_VISIBLE_DEVICES).
+    Uses nvidia-smi with specific GPU index based on CUDA_VISIBLE_DEVICES and LOCAL_RANK
+    to query only the GPU actually used by this process.
     """
     try:
-        # Get the GPU indices that are visible to this process
-        cuda_visible = os.environ.get('CUDA_VISIBLE_DEVICES', None)
+        # Get local rank to query the correct GPU
+        local_rank = int(os.environ.get('LOCAL_RANK', 0))
         
-        if cuda_visible is not None and cuda_visible != '':
-            # Query only the specific GPUs assigned to this process
+        # Get the physical GPU index from CUDA_VISIBLE_DEVICES
+        cuda_visible = os.environ.get('CUDA_VISIBLE_DEVICES', '')
+        if cuda_visible:
             gpu_indices = cuda_visible.split(',')
-            gpu_id_arg = f"--id={cuda_visible}"
+            physical_gpu = gpu_indices[local_rank] if local_rank < len(gpu_indices) else gpu_indices[0]
         else:
-            # Fallback: use local_rank to get the current GPU
-            local_rank = int(os.environ.get('LOCAL_RANK', 0))
-            gpu_id_arg = f"--id={local_rank}"
-            gpu_indices = [str(local_rank)]
+            physical_gpu = str(local_rank)
         
         result = subprocess.run(
-            ['nvidia-smi', gpu_id_arg,
+            ['nvidia-smi', f'--id={physical_gpu}',
              '--query-gpu=utilization.gpu,memory.used,memory.total,power.draw', 
              '--format=csv,noheader,nounits'],
             capture_output=True, text=True, timeout=1
         )
+        
         if result.returncode == 0:
-            lines = result.stdout.strip().split('\n')
-            # Average across only the GPUs we're actually using
-            gpu_utils = []
-            mem_useds = []
-            mem_totals = []
-            powers = []
-            for line in lines:
-                if not line.strip():
-                    continue
-                parts = line.split(',')
-                if len(parts) == 4:
-                    gpu_utils.append(float(parts[0].strip()))
-                    mem_useds.append(float(parts[1].strip()))
-                    mem_totals.append(float(parts[2].strip()))
-                    powers.append(float(parts[3].strip()))
-            
-            return {
-                'gpu_util_avg': np.mean(gpu_utils) if gpu_utils else 0,
-                'gpu_mem_used_mb': np.mean(mem_useds) if mem_useds else 0,
-                'gpu_mem_total_mb': np.mean(mem_totals) if mem_totals else 0,
-                'gpu_power_w': np.mean(powers) if powers else 0,
-                'num_gpus_detected': len(gpu_utils)
-            }
+            parts = result.stdout.strip().split(',')
+            if len(parts) >= 4:
+                return {
+                    'gpu_util_avg': float(parts[0].strip()),
+                    'gpu_mem_used_mb': float(parts[1].strip()),
+                    'gpu_mem_total_mb': float(parts[2].strip()),
+                    'gpu_power_w': float(parts[3].strip()),
+                    'num_gpus_detected': 1
+                }
     except Exception as e:
         pass
     return {
@@ -287,8 +273,8 @@ def train_model_unet(model_engine, train_loader, val_loader, train_sampler=None,
             batch_count += 1
 
             # Sample GPU stats more frequently for accurate benchmarking (every 5 batches)
-            if batch_idx % 5 == 0 and global_rank == 0:
-                gpu_stats = get_gpu_stats()
+            if batch_idx % 1 == 0 and global_rank == 0:
+                gpu_stats = get_gpu_stats(device)
                 gpu_utilizations_all.append(gpu_stats['gpu_util_avg'])
                 gpu_memory_usages_all.append(gpu_stats['gpu_mem_used_mb'])
                 gpu_power_draws_all.append(gpu_stats['gpu_power_w'])
@@ -554,8 +540,9 @@ if __name__ == "__main__":
     MASK_ROOT = f"{DATA_ROOT}/mask"
     
     # Training settings (can be overridden by env vars for benchmarking)
-    DOWN_SAMPLE = args.benchmark  # Auto-enable for benchmarks
-    DOWN_SAMPLE_SUBSET = 100 if args.benchmark else 100
+    # Enable downsampling from env var or --benchmark flag
+    DOWN_SAMPLE = args.benchmark or os.environ.get('DOWNSAMPLE', '0') == '1'
+    DOWN_SAMPLE_SUBSET = 1000  # Number of samples when downsampling is enabled
     TARGET_SIZE = (512, 512)  # Reduced from 1024 for faster training
     VALIDATION = True
     VALIDATE_EVERY = 2  # Run validation every N epochs

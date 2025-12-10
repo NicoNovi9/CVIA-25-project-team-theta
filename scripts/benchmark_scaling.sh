@@ -57,14 +57,14 @@ echo ""
 # Format: num_gpus:num_nodes:tasks_per_node:batch_per_gpu
 # STRONG SCALING: Fixed global batch = 32
 CONFIGS=(
-    # "1:1:1:32"      # 1 GPU:   32 batch/gpu = 32 global
-    # "2:1:2:16"      # 2 GPUs:  16 batch/gpu = 32 global
-    # "4:1:4:8"       # 4 GPUs:  8 batch/gpu  = 32 global
-    # "8:2:4:4"       # 8 GPUs:  4 batch/gpu  = 32 global (2 nodes)
-    # "1:1:1:8"       # 1 GPU:   8 batch/gpu  = 8 global
-    # "2:1:2:8"       # 2 GPUs:  8 batch/gpu  = 16 global
-    # "4:1:4:8"       # 4 GPUs:  8 batch/gpu  = 32 global
-    # "8:2:4:8"       # 8 GPUs:  8 batch/gpu  = 64 global (2 nodes)
+    "1:1:1:32"      # 1 GPU:   32 batch/gpu = 32 global
+    "2:1:2:16"      # 2 GPUs:  16 batch/gpu = 32 global
+    "4:1:4:8"       # 4 GPUs:  8 batch/gpu  = 32 global
+    "8:2:4:4"       # 8 GPUs:  4 batch/gpu  = 32 global (2 nodes)
+    "1:1:1:8"       # 1 GPU:   8 batch/gpu  = 8 global
+    "2:1:2:8"       # 2 GPUs:  8 batch/gpu  = 16 global
+    "4:1:4:8"       # 4 GPUs:  8 batch/gpu  = 32 global
+    "8:2:4:8"       # 8 GPUs:  8 batch/gpu  = 64 global (2 nodes)
     "16:4:4:8"      # 16 GPUs: 8 batch/gpu  = 128 global (4 nodes)
     "16:4:4:16"      # 16 GPUs: 16 batch/gpu = 256 global (4 nodes)
 )

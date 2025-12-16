@@ -365,7 +365,7 @@ ax.grid(True, alpha=0.3)
 # Vertical lines for node transitions
 ax.axvline(x=6, color='gray', linestyle='--', linewidth=2, alpha=0.8, label='1→2 nodes')
 ax.axvline(x=12, color='dimgray', linestyle='--', linewidth=2, alpha=0.8, label='2→4 nodes')
-ax.legend(loc='upper left', fontsize=12)
+ax.legend(loc='upper right', fontsize=12)
 
 plt.tight_layout()
 plt.savefig('plots/energy_efficiency.png', dpi=150, bbox_inches='tight')

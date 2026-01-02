@@ -1,0 +1,150 @@
+# =============================================================================
+# YOLO Training Configuration for SPARK Dataset
+# =============================================================================
+# This configuration file controls all training parameters for the YOLO model.
+# Edit this file to customize training behavior.
+
+# =============================================================================
+# DATA CONFIGURATION
+# =============================================================================
+data:
+  # Root path to SPARK dataset
+  data_root: "/project/scratch/p200981/spark2024"
+  train_csv: "train.csv"
+  val_csv: "val.csv"
+  image_root: "images"
+  
+  # YOLO format dataset will be created here (automatically generated)
+  yolo_dataset_path: "/project/scratch/p200981/spark2024_yolo"
+
+# =============================================================================
+# MODEL CONFIGURATION
+# =============================================================================
+model:
+  # Model size: 'n' (nano), 's' (small), 'm' (medium), 'l' (large), 'x' (xlarge)
+  # yolo11n.pt, yolo11s.pt, yolo11m.pt, yolo11l.pt, yolo11x.pt
+  size: "n"
+  
+  # Base model name (e.g., yolo11, yolov8)
+  base: "yolo11"
+  
+  # Whether to use pretrained COCO weights for backbone (detection head will be new)
+  pretrained_backbone: true
+
+# =============================================================================
+# TRAINING CONFIGURATION  
+# =============================================================================
+training:
+  # Number of training epochs
+  epochs: 30
+  
+  # Early stopping patience (epochs without improvement)
+  patience: 15
+  
+  # Image input size (square)
+  imgsz: 640
+  
+  # Batch size per GPU (auto=0.8 for automatic batch sizing based on GPU memory)
+  batch_size: 1024
+  
+  # Number of data loading workers per GPU
+  workers: 8
+  
+  # Learning rate
+  lr0: 0.001
+  lrf: 0.001  # Final learning rate (lr0 * lrf)
+  
+  # Optimizer: SGD, Adam, AdamW
+  optimizer: "AdamW"
+  
+  # Weight decay
+  weight_decay: 0.0005
+  
+  # Momentum
+  momentum: 0.937
+  
+  # Warmup epochs
+  warmup_epochs: 3.0
+  
+  # Use mixed precision (FP16)
+  amp: true
+  
+  # Resume from checkpoint (path or false)
+  resume: false
+
+# =============================================================================
+# AUGMENTATION CONFIGURATION
+# =============================================================================
+# Augmentation level: 'none', 'light', 'medium', 'heavy'
+augmentation:
+  level: "light"
+  
+  # Specific augmentation parameters (override level defaults)
+  # These are applied when level is 'custom' or to override specific values
+  
+  # Geometric augmentations
+  fliplr: 0.5      # Horizontal flip probability
+  flipud: 0.1      # Vertical flip probability  
+  degrees: 0.0     # Rotation degrees (+/- deg)
+  translate: 0.1   # Translation (+/- fraction)
+  scale: 0.1       # Scale (+/- gain)
+  shear: 0.0       # Shear (+/- deg)
+  perspective: 0.0 # Perspective (+/- fraction)
+  
+  # Color augmentations
+  hsv_h: 0.015     # HSV-Hue augmentation (fraction)
+  hsv_s: 0.7       # HSV-Saturation augmentation (fraction)
+  hsv_v: 0.4       # HSV-Value augmentation (fraction)
+  
+  # Other augmentations
+  mosaic: 1.0      # Mosaic augmentation probability
+  mixup: 0.0       # MixUp augmentation probability
+  copy_paste: 0.0  # Copy-paste augmentation probability
+  
+  # Auto augmentation: 'randaugment', 'autoaugment', 'augmix', or ''
+  auto_augment: ""
+
+# =============================================================================
+# OUTPUT CONFIGURATION
+# =============================================================================
+output:
+  # Save directory for model weights and logs
+  save_path: "model_weights_yolo"
+  
+  # Project name for organizing runs
+  project: "yolo_spark"
+  
+  # Run name (auto-generated if empty)
+  name: ""
+  
+  # Save checkpoints every N epochs
+  save_period: 10
+  
+  # Save plots (loss curves, PR curves, etc.)
+  plots: true
+
+# =============================================================================
+# DISTRIBUTED TRAINING CONFIGURATION
+# =============================================================================
+distributed:
+  # Backend: 'nccl' for GPU, 'gloo' for CPU
+  backend: "nccl"
+  
+  # Sync batch normalization across GPUs
+  sync_bn: false
+
+# =============================================================================
+# CLASS MAPPING (SPARK Dataset)
+# =============================================================================
+classes:
+  names:
+    0: "VenusExpress"
+    1: "Cheops"
+    2: "LisaPathfinder"
+    3: "ObservationSat1"
+    4: "Proba2"
+    5: "Proba3"
+    6: "Proba3ocs"
+    7: "Smart1"
+    8: "Soho"
+    9: "XMM Newton"

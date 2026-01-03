@@ -1,0 +1,86 @@
+======================================================================
+UNET3+ 3-CLASS SEGMENTATION EVALUATION REPORT
+======================================================================
+
+MODEL INFORMATION:
+  Backbone: convnext_tiny
+  Classes: 3
+
+CLASSES:
+  0: background
+  1: spacecraft_body
+  2: solar_panels
+
+
+OVERALL METRICS
+----------------------------------------------------------------------
+Pixel Accuracy:     0.998168
+Mean IoU:           0.967440
+Mean IoU (no bg):   0.951890
+Mean Dice:          0.983321
+Mean Dice (no bg):  0.975347
+
+
+PER-CLASS METRICS
+----------------------------------------------------------------------
+Class                       IoU       Dice  Precision     Recall      Support
+----------------------------------------------------------------------
+background               0.9985     0.9993     0.9993     0.9992 4,989,446,871
+spacecraft_body          0.9564     0.9777     0.9769     0.9784  188,512,174
+solar_panels             0.9474     0.9730     0.9704     0.9756   64,920,955
+
+
+PER-SATELLITE METRICS
+----------------------------------------------------------------------
+
+Proba3:
+  Mean IoU:  0.9798
+  Mean Dice: 0.9897
+
+LisaPathfinder:
+  Mean IoU:  0.9820
+  Mean Dice: 0.9909
+
+Smart1:
+  Mean IoU:  0.9368
+  Mean Dice: 0.9668
+
+XMM Newton:
+  Mean IoU:  0.9636
+  Mean Dice: 0.9813
+
+Proba2:
+  Mean IoU:  0.9674
+  Mean Dice: 0.9833
+
+Cheops:
+  Mean IoU:  0.9812
+  Mean Dice: 0.9905
+
+Proba3ocs:
+  Mean IoU:  0.9693
+  Mean Dice: 0.9843
+
+ObservationSat1:
+  Mean IoU:  0.9633
+  Mean Dice: 0.9811
+
+Soho:
+  Mean IoU:  0.9548
+  Mean Dice: 0.9766
+
+VenusExpress:
+  Mean IoU:  0.9270
+  Mean Dice: 0.9614
+
+
+CONFUSION MATRIX
+----------------------------------------------------------------------
+Rows: True labels, Columns: Predicted labels
+
+                    backgroundspacecraft_body   solar_panels
+     background  4,985,486,058      3,302,080        658,733
+spacecraft_body      2,790,160    184,448,570      1,273,444
+   solar_panels        532,399      1,050,685     63,337,871
+
+======================================================================

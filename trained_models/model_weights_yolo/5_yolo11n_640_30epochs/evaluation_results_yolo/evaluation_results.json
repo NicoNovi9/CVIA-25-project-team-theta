@@ -1,0 +1,71 @@
+{
+  "model_path": "model_weights_yolo/yolo11n_640/weights/best.pt",
+  "data_yaml": "/project/scratch/p200981/spark2024_yolo/data.yaml",
+  "mAP50": 0.9898984439221257,
+  "mAP50_95": 0.9708897951113119,
+  "precision": 0.9925134003030328,
+  "recall": 0.989532235858362,
+  "classification_accuracy": 0.9997,
+  "per_class": {
+    "VenusExpress": {
+      "precision": 0.9995002498750625,
+      "recall": 1.0,
+      "f1": 0.9997500624843789,
+      "support": 2000
+    },
+    "Cheops": {
+      "precision": 1.0,
+      "recall": 0.9995,
+      "f1": 0.9997499374843711,
+      "support": 2000
+    },
+    "LisaPathfinder": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 2000
+    },
+    "ObservationSat1": {
+      "precision": 0.9995002498750625,
+      "recall": 1.0,
+      "f1": 0.9997500624843789,
+      "support": 2000
+    },
+    "Proba2": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 2000
+    },
+    "Proba3": {
+      "precision": 1.0,
+      "recall": 0.9995,
+      "f1": 0.9997499374843711,
+      "support": 2000
+    },
+    "Proba3ocs": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 2000
+    },
+    "Smart1": {
+      "precision": 0.9985022466300549,
+      "recall": 1.0,
+      "f1": 0.9992505620784412,
+      "support": 2000
+    },
+    "Soho": {
+      "precision": 1.0,
+      "recall": 0.9995,
+      "f1": 0.9997499374843711,
+      "support": 2000
+    },
+    "XMM Newton": {
+      "precision": 0.9994994994994995,
+      "recall": 0.9985,
+      "f1": 0.9989994997498749,
+      "support": 2000
+    }
+  }
+}

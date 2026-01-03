@@ -177,7 +177,7 @@ def save_detection_csv(results, output_path):
     """
     with open(output_path, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['Image name', 'Class', 'Bounding box'])
+        writer.writerow(['filename', 'class', 'bbox'])
         
         for r in results:
             writer.writerow([r['filename'], r['class'], r['bbox']])

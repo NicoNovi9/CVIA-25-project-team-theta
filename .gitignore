@@ -7,3 +7,16 @@ model_weights_unet/
 *.out
 *.pth
 *.pt
+
+
+# too big files associated to trained models
+trained_models/1_model_weights_DETR_30epochs/detr_best
+trained_models/1_model_weights_DETR_30epochs/detr_final
+trained_models/2_model_weights_unet_30epochs/unet_best
+trained_models/2_model_weights_unet_30epochs/unet_final
+trained_models/3_model_weights_unet3plus_30epochs/unet3plus_best
+trained_models/3_model_weights_unet3plus_30epochs/unet3plus_final
+trained_models/4_model_weights_conditionalDetr_60epochs/detr_best
+trained_models/4_model_weights_conditionalDetr_60epochs/detr_final
+trained_models/model_weights_yolo/5_yolo11n_640_30epochs/weights
+trained_models/model_weights_yolo/6_yolo11n_640_240epochs/weights

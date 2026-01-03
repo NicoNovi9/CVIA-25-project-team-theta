@@ -1,0 +1,82 @@
+======================================================================
+UNET 3-CLASS SEGMENTATION EVALUATION REPORT
+======================================================================
+
+CLASSES:
+  0: background
+  1: spacecraft_body
+  2: solar_panels
+
+
+OVERALL METRICS
+----------------------------------------------------------------------
+Pixel Accuracy:     0.996477
+Mean IoU:           0.931854
+Mean IoU (no bg):   0.899039
+Mean Dice:          0.964066
+Mean Dice (no bg):  0.946728
+
+
+PER-CLASS METRICS
+----------------------------------------------------------------------
+Class                       IoU       Dice  Precision     Recall      Support
+----------------------------------------------------------------------
+background               0.9975     0.9987     0.9987     0.9988 4,989,446,871
+spacecraft_body          0.9182     0.9574     0.9606     0.9542  188,512,174
+solar_panels             0.8798     0.9361     0.9300     0.9423   64,920,955
+
+
+PER-SATELLITE METRICS
+----------------------------------------------------------------------
+
+ObservationSat1:
+  Mean IoU:  0.9241
+  Mean Dice: 0.9598
+
+Cheops:
+  Mean IoU:  0.9570
+  Mean Dice: 0.9778
+
+Smart1:
+  Mean IoU:  0.8792
+  Mean Dice: 0.9336
+
+Proba3ocs:
+  Mean IoU:  0.9331
+  Mean Dice: 0.9647
+
+Soho:
+  Mean IoU:  0.9264
+  Mean Dice: 0.9610
+
+XMM Newton:
+  Mean IoU:  0.9158
+  Mean Dice: 0.9548
+
+Proba2:
+  Mean IoU:  0.9368
+  Mean Dice: 0.9668
+
+LisaPathfinder:
+  Mean IoU:  0.9584
+  Mean Dice: 0.9785
+
+VenusExpress:
+  Mean IoU:  0.8621
+  Mean Dice: 0.9232
+
+Proba3:
+  Mean IoU:  0.9499
+  Mean Dice: 0.9740
+
+
+CONFUSION MATRIX
+----------------------------------------------------------------------
+Rows: True labels, Columns: Predicted labels
+
+                    backgroundspacecraft_body   solar_panels
+     background  4,983,354,277      5,007,109      1,085,485
+spacecraft_body      5,109,689    179,881,712      3,520,773
+   solar_panels      1,368,460      2,379,605     61,172,890
+
+======================================================================

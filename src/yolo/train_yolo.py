@@ -214,6 +214,17 @@ def main():
     
     # Resume from checkpoint if specified
     resume = args.resume or training_config.get('resume', False)
+    # resume_path = args.resume or training_config.get('resume', False)
+    
+    # # Check if we should load weights from a checkpoint
+    # if resume_path and isinstance(resume_path, str) and os.path.exists(resume_path):
+    #     print(f"Loading weights from checkpoint: {resume_path}")
+    #     # Load the checkpoint weights into the detector
+    #     from ultralytics import YOLO
+    #     detector.model = YOLO(resume_path)
+    #     resume = False  # Don't use resume parameter, just loaded weights
+    # else:
+    #     resume = resume_path if resume_path else False
     
     # Adjust save path for distributed training to avoid conflicts
     save_name = output_config['name'] or f"{model_config['base']}{model_config['size']}_{training_config['imgsz']}"

@@ -1,0 +1,266 @@
+# =============================================================================
+# SegFormer Training Configuration for SPARK Segmentation Dataset
+# =============================================================================
+# This configuration file controls all training parameters for the SegFormer model.
+# SegFormer uses a hierarchical Transformer encoder with MLP decoder for efficient
+# semantic segmentation. Models range from B0 (lightweight) to B5 (high accuracy).
+#
+# Reference: "SegFormer: Simple and Efficient Design for Semantic Segmentation 
+#            with Transformers" - Xie et al., NeurIPS 2021
+
+# =============================================================================
+# DATA CONFIGURATION
+# =============================================================================
+data:
+  # Root path to SPARK dataset
+  data_root: "/project/scratch/p200981/spark2024"
+  train_csv: "train.csv"
+  val_csv: "val.csv"
+  image_root: "images"
+  mask_root: "mask"
+  
+  # Number of segmentation classes
+  # 0 = background, 1 = spacecraft body, 2 = solar panels
+  num_classes: 3
+  
+  # Class names for logging
+  class_names:
+    - "background"
+    - "spacecraft_body"
+    - "solar_panels"
+
+# =============================================================================
+# MODEL CONFIGURATION
+# =============================================================================
+model:
+  # SegFormer variant: 'b0', 'b1', 'b2', 'b3', 'b4', 'b5'
+  # b0: 3.7M params, fastest (384 embed dim)
+  # b1: 13.7M params
+  # b2: 24.7M params (recommended for good speed/accuracy tradeoff)
+  # b3: 44.6M params
+  # b4: 61.4M params  
+  # b5: 81.4M params, highest accuracy (but slowest)
+  variant: "b2"
+  
+  # Use pretrained weights from ImageNet-1k or ADE20K
+  # Options: "imagenet", "ade20k", "cityscapes", null (random init)
+  pretrained: "ade20k"
+  
+  # Freeze backbone (encoder) weights - useful for fine-tuning
+  freeze_backbone: false
+  
+  # Decoder embedding dimension (MLP decoder)
+  # Higher values = more capacity but slower
+  decoder_embed_dim: 768
+  
+  # Dropout rate for decoder
+  dropout: 0.1
+
+# =============================================================================
+# TRAINING CONFIGURATION  
+# =============================================================================
+training:
+  # Number of training epochs
+  epochs: 300
+  
+  # Early stopping patience (epochs without improvement)
+  patience: 30
+  
+  # Image input size (square) - SegFormer works well with various sizes
+  # 512 is a good default, can increase to 640 or 768 for better accuracy
+  image_size: 512
+  
+  # Batch size per GPU
+  # SegFormer b2 with 512x512: ~8-12 per A100 40GB
+  # Reduce for larger models or larger images
+  batch_size: 16
+  
+  # Gradient accumulation steps (effective_batch = batch_size * accumulation * num_gpus)
+  gradient_accumulation_steps: 1
+  
+  # Number of data loading workers per GPU
+  num_workers: 8
+  
+  # Validation frequency (every N epochs)
+  validate_every: 1
+  
+  # Mixed precision training
+  # Options: "fp16", "bf16", "fp32"
+  precision: "fp32"
+  
+  # ==========================================================================
+  # OPTIMIZER CONFIGURATION
+  # ==========================================================================
+  optimizer:
+    # Optimizer type: "adamw", "adam", "sgd"
+    type: "adamw"
+    
+    # Learning rate
+    # SegFormer typically uses smaller LR than CNNs: 2e-5 to 6e-5
+    lr: 6e-5
+    
+    # Weight decay (L2 regularization)
+    weight_decay: 0.01
+    
+    # Adam betas
+    betas: [0.9, 0.999]
+    
+    # Adam epsilon
+    eps: 1e-8
+  
+  # ==========================================================================
+  # LEARNING RATE SCHEDULER
+  # ==========================================================================
+  scheduler:
+    # Scheduler type: "polynomial", "cosine", "warmup_cosine", "step", "none"
+    type: "warmup_cosine"
+    
+    # Warmup epochs (fraction or integer)
+    warmup_epochs: 5
+    
+    # Warmup learning rate (start)
+    warmup_lr: 1e-7
+    
+    # Minimum learning rate (for cosine/polynomial)
+    min_lr: 1e-6
+    
+    # Polynomial power (for polynomial scheduler)
+    power: 1.0
+  
+  # ==========================================================================
+  # LOSS FUNCTION
+  # ==========================================================================
+  loss:
+    # Loss type: "ce", "dice", "ce_dice", "focal", "ohem"
+    type: "ce_dice"
+    
+    # Cross-entropy weight in combined loss
+    ce_weight: 0.5
+    
+    # Dice weight in combined loss
+    dice_weight: 0.5
+    
+    # Class weights for imbalanced data (null for equal weights)
+    # Format: [background_weight, body_weight, panel_weight]
+    class_weights: null
+    
+    # Label smoothing
+    label_smoothing: 0.0
+    
+    # Focal loss gamma (only for focal loss)
+    focal_gamma: 2.0
+  
+  # Gradient clipping
+  gradient_clip: 1.0
+  
+  # Resume from checkpoint (path or null)
+  resume: null
+
+# =============================================================================
+# DATA AUGMENTATION CONFIGURATION
+# =============================================================================
+augmentation:
+  # Enable augmentation (recommended for training)
+  enabled: true
+  
+  # Geometric augmentations
+  horizontal_flip: 0.5
+  vertical_flip: 0.5
+  rotation_limit: 30  # degrees
+  scale_limit: 0.2    # +/- percentage
+  shift_limit: 0.1    # +/- percentage
+  
+  # Color augmentations (image only)
+  brightness_limit: 0.2
+  contrast_limit: 0.2
+  saturation_limit: 0.2
+  hue_limit: 0.1
+  
+  # Advanced augmentations
+  random_crop: false
+  crop_size: 448       # Only used if random_crop is true
+  coarse_dropout: false
+  coarse_dropout_prob: 0.3
+  
+  # Normalization (ImageNet defaults work well for pretrained models)
+  normalize:
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+
+# =============================================================================
+# OUTPUT CONFIGURATION
+# =============================================================================
+output:
+  # Save directory for model weights and logs
+  save_path: "model_weights_segformer"
+  
+  # Save checkpoints every N epochs
+  checkpoint_every: 10
+  
+  # Keep only best checkpoint (saves disk space)
+  keep_only_best: false
+  
+  # Save training plots
+  save_plots: true
+  
+  # Logging frequency (batches)
+  log_every: 20
+
+# =============================================================================
+# DEEPSPEED CONFIGURATION
+# =============================================================================
+deepspeed:
+  # ZeRO optimization stage: 0, 1, 2, or 3
+  # 0: No ZeRO (DDP-like)
+  # 1: Optimizer state partitioning
+  # 2: Gradient + optimizer state partitioning (recommended)
+  # 3: Full model partitioning (for very large models)
+  zero_stage: 1
+  
+  # Offload optimizer to CPU (for memory savings)
+  offload_optimizer: false
+  
+  # Offload parameters to CPU (ZeRO-3 only)
+  offload_params: false
+  
+  # Communication overlap
+  overlap_comm: true
+  
+  # Reduce bucket size (bytes)
+  reduce_bucket_size: 500000000
+  
+  # Allgather bucket size (bytes)
+  allgather_bucket_size: 500000000
+
+# =============================================================================
+# EXPERIMENT TRACKING
+# =============================================================================
+experiment:
+  # Experiment name (auto-generated if null)
+  name: null
+  
+  # Random seed for reproducibility
+  seed: 42
+  
+  # Enable deterministic mode (slower but reproducible)
+  deterministic: false
+  
+  # Downsample dataset for quick testing
+  debug_mode: false
+  debug_samples: 100
+
+# =============================================================================
+# HARDWARE CONFIGURATION
+# =============================================================================
+hardware:
+  # Number of nodes (auto-detected from SLURM if null)
+  num_nodes: null
+  
+  # GPUs per node (auto-detected from SLURM if null)
+  gpus_per_node: null
+  
+  # Enable cuDNN benchmark (faster training)
+  cudnn_benchmark: true
+  
+  # Enable TF32 for A100 GPUs (faster matmul)
+  allow_tf32: true

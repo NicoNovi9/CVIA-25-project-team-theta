@@ -23,7 +23,7 @@ data:
 model:
   # Model size: 'n' (nano), 's' (small), 'm' (medium), 'l' (large), 'x' (xlarge)
   # yolo11n.pt, yolo11s.pt, yolo11m.pt, yolo11l.pt, yolo11x.pt
-  size: "n"
+  size: "s"
   
   # Base model name (e.g., yolo11, yolov8)
   base: "yolo11"
@@ -36,16 +36,16 @@ model:
 # =============================================================================
 training:
   # Number of training epochs
-  epochs: 30
+  epochs: 300
   
   # Early stopping patience (epochs without improvement)
-  patience: 15
+  patience: 35
   
   # Image input size (square)
   imgsz: 640
   
   # Batch size per GPU (auto=0.8 for automatic batch sizing based on GPU memory)
-  batch_size: 1024
+  batch_size: 512
   
   # Number of data loading workers per GPU
   workers: 8
@@ -109,7 +109,7 @@ augmentation:
 # =============================================================================
 output:
   # Save directory for model weights and logs
-  save_path: "model_weights_yolo"
+  save_path: "model_weights_yolo11s"
   
   # Project name for organizing runs
   project: "yolo_spark"
@@ -118,7 +118,7 @@ output:
   name: ""
   
   # Save checkpoints every N epochs
-  save_period: 10
+  save_period: 20
   
   # Save plots (loss curves, PR curves, etc.)
   plots: true

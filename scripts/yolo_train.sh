@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH --job-name=train_yolo
-#SBATCH --time=4:00:00
+#SBATCH --time=7:00:00
 #SBATCH --partition=gpu
 #SBATCH --qos=default
 #SBATCH --account=p200776
@@ -11,7 +11,6 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=4
 #SBATCH --cpus-per-task=32
-#SBATCH --gres=gpu:4
 
 #SBATCH --output=yolo_train.out
 #SBATCH --error=yolo_train.err

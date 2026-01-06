@@ -57,7 +57,7 @@ python -u src/yolo/inference_yolo.py \
     --output_dir "$OUTPUT_DIR" \
     --threshold 0.25 \
     --imgsz 640 \
-    --batch_size 32 \
+    --batch_size 64 \
     --device 0
 
 echo ""

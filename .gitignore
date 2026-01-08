@@ -7,7 +7,7 @@ model_weights_unet/
 *.out
 *.pth
 *.pt
-last_submission/
+submission*/
 
 # too big files associated to trained models
 trained_models/1_model_weights_DETR_30epochs/detr_best
@@ -21,3 +21,6 @@ trained_models/4_model_weights_conditionalDetr_60epochs/detr_final
 trained_models/model_weights_yolo/5_yolo11n_640_30epochs/weights
 trained_models/model_weights_yolo/6_yolo11n_640_240epochs/weights
 trained_models/model_weights_yolo/7_yolo11s_640/weights
+trained_models/segformer/8_segformer_b2_512/first_300epochs/weights
+trained_models/segformer/8_segformer_b2_512/last_300epochs/weights
+trained_models/segformer/9_segformer_b3_512/weights

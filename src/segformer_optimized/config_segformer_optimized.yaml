@@ -1,0 +1,217 @@
+# =============================================================================
+# SegFormer Optimized Training Configuration
+# =============================================================================
+# This optimized version uses precomputed bounding boxes from YOLO detection,
+# then performs segmentation only on the bounding box region. This approach:
+# - Focuses segmentation on the relevant spacecraft region
+# - Preserves full resolution for smaller bounding boxes (< 512x512)
+# - Only downsamples larger bounding boxes
+# - Classifies all pixels outside bounding box as background
+# - Avoids on-the-fly YOLO inference during distributed training
+#
+# Reference: "SegFormer: Simple and Efficient Design for Semantic Segmentation 
+#            with Transformers" - Xie et al., NeurIPS 2021
+
+# =============================================================================
+# DATA CONFIGURATION
+# =============================================================================
+data:
+  # Root path to SPARK dataset
+  data_root: "/project/scratch/p200981/spark2024"
+  train_csv: "train.csv"
+  val_csv: "val.csv"
+  image_root: "images"
+  mask_root: "mask"
+  
+  # Precomputed detection CSV files
+  # These should be generated using precompute_bboxes.py script
+  # Format: Image name,Class,Bounding box
+  train_detection_csv: "/project/scratch/p200981/spark2024_detection_precomp/train_detection.csv"
+  val_detection_csv: "/project/scratch/p200981/spark2024_detection_precomp/val_detection.csv"
+  
+  # Number of segmentation classes
+  # 0 = background, 1 = spacecraft body, 2 = solar panels
+  num_classes: 3
+  
+  # Class names for logging
+  class_names:
+    - "background"
+    - "spacecraft_body"
+    - "solar_panels"
+
+# =============================================================================
+# BOUNDING BOX CONFIGURATION
+# =============================================================================
+bbox:
+  # Fallback behavior if no detection is made
+  # Options: "full_image" (use entire image), "center_crop" (use center crop)
+  fallback_mode: "full_image"
+  
+  # Bounding box expansion factor (to include some context)
+  # 1.0 = exact bbox, 1.1 = 10% larger bbox on each side
+  expansion: 1.1
+
+# =============================================================================
+# MODEL CONFIGURATION
+# =============================================================================
+model:
+  # SegFormer variant: 'b0', 'b1', 'b2', 'b3', 'b4', 'b5'
+  # b0: 3.7M params, fastest (384 embed dim)
+  # b1: 13.7M params
+  # b2: 24.7M params (recommended for good speed/accuracy tradeoff)
+  # b3: 44.6M params
+  # b4: 61.4M params  
+  # b5: 81.4M params, highest accuracy (but slowest)
+  variant: "b2"
+  
+  # Use pretrained weights from ImageNet-1k or ADE20K
+  # Options: "imagenet", "ade20k", "cityscapes", null (random init)
+  pretrained: "ade20k"
+  
+  # Freeze backbone (encoder) weights - useful for fine-tuning
+  freeze_backbone: false
+  
+  # Decoder embedding dimension (MLP decoder)
+  decoder_embed_dim: 768
+  
+  # Dropout rate for decoder
+  dropout: 0.1
+
+# =============================================================================
+# TRAINING CONFIGURATION  
+# =============================================================================
+training:
+  # Number of training epochs
+  epochs: 2
+  
+  # Early stopping patience (epochs without improvement)
+  patience: 30
+  
+  # Segmentation input size (what SegFormer sees)
+  # The bounding box region will be resized to this size:
+  # - If bbox < 512x512: pad with black pixels
+  # - If bbox > 512x512: downsample
+  image_size: 512
+  
+  # Batch size per GPU
+  batch_size: 16
+  
+  # Gradient accumulation steps
+  gradient_accumulation_steps: 1
+  
+  # Number of data loading workers per GPU
+  num_workers: 8
+  
+  # Validation frequency (every N epochs)
+  validate_every: 1
+  
+  # Mixed precision training
+  # Options: "fp16", "bf16", "fp32"
+  precision: "fp32"
+  
+  # ==========================================================================
+  # OPTIMIZER CONFIGURATION
+  # ==========================================================================
+  optimizer:
+    type: "adamw"
+    lr: 6e-5
+    weight_decay: 0.01
+    betas: [0.9, 0.999]
+    eps: 1e-8
+  
+  # ==========================================================================
+  # LEARNING RATE SCHEDULER
+  # ==========================================================================
+  scheduler:
+    type: "warmup_cosine"
+    warmup_epochs: 5
+    warmup_lr: 1e-7
+    min_lr: 1e-6
+    power: 1.0
+  
+  # ==========================================================================
+  # LOSS FUNCTION
+  # ==========================================================================
+  loss:
+    type: "ce_dice"
+    ce_weight: 0.5
+    dice_weight: 0.5
+    class_weights: null
+    label_smoothing: 0.0
+    focal_gamma: 2.0
+  
+  # Gradient clipping
+  gradient_clip: 1.0
+  
+  # Resume from checkpoint (path or null)
+  resume: null
+
+# =============================================================================
+# DATA AUGMENTATION CONFIGURATION
+# =============================================================================
+augmentation:
+  enabled: true
+  
+  # Geometric augmentations (applied to bbox crop)
+  horizontal_flip: 0.5
+  vertical_flip: 0.5
+  rotation_limit: 30
+  scale_limit: 0.2
+  shift_limit: 0.1
+  
+  # Color augmentations
+  brightness_limit: 0.2
+  contrast_limit: 0.2
+  saturation_limit: 0.2
+  hue_limit: 0.1
+  
+  # Advanced augmentations
+  random_crop: false
+  crop_size: 448
+  coarse_dropout: false
+  coarse_dropout_prob: 0.3
+  
+  # Normalization
+  normalize:
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+
+# =============================================================================
+# OUTPUT CONFIGURATION
+# =============================================================================
+output:
+  save_path: "model_weights_segformer_optimized"
+  checkpoint_every: 10
+  keep_only_best: false
+  save_plots: true
+  log_every: 20
+
+# =============================================================================
+# DEEPSPEED CONFIGURATION
+# =============================================================================
+deepspeed:
+  zero_stage: 1
+  offload_optimizer: false
+  offload_params: false
+  overlap_comm: true
+  reduce_bucket_size: 500000000
+  allgather_bucket_size: 500000000
+
+# =============================================================================
+# EXPERIMENT TRACKING
+# =============================================================================
+experiment:
+  name: null
+  seed: 42
+  deterministic: false
+  debug_mode: false
+  debug_samples: 100
+
+# =============================================================================
+# HARDWARE CONFIGURATION
+# =============================================================================
+hardware:
+  num_nodes: null
+  gpus_per_node: null
+  cudnn_benchmark: true
+  allow_tf32: true

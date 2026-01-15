@@ -31,7 +31,7 @@ module load OpenMPI/5.0.3-GCC-13.3.0
 source ds_env/bin/activate
 
 # Configuration
-MODEL_PATH="${MODEL_PATH:-model_weights_segformer_optimized/segformer_optimized_best}"
+MODEL_PATH="/project/home/p200776/u103235/cvia/CVIA-25-project-team-theta/trained_models/model_weights_yolo/7_yolo11s_640/weights/best.pt"
 CONFIG_FILE="${CONFIG_FILE:-src/segformer_optimized/config_segformer_optimized.yaml}"
 OUTPUT_DIR="${OUTPUT_DIR:-evaluation_results_segformer_optimized}"
 BATCH_SIZE="${BATCH_SIZE:-16}"

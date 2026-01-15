@@ -11,8 +11,8 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
 
-#SBATCH --output=segformer_eval_%j.out
-#SBATCH --error=segformer_eval_%j.err
+#SBATCH --output=segformer_eval.out
+#SBATCH --error=segformer_eval.err
 
 echo "=================================================="
 echo "SegFormer Evaluation"
@@ -25,18 +25,16 @@ echo "=================================================="
 # Module loading
 module purge
 module load Python/3.11.10-GCCcore-13.3.0
-module load scikit-learn/1.5.2-gfbf-2024a
-module load matplotlib/3.9.2-gfbf-2024a
-module load PyTorch/2.3.0-foss-2024a-CUDA-12.6.0
-module load torchvision/0.18.1-foss-2024a-CUDA-12.6.0
+module load CUDA/12.6.0
+module load OpenMPI/5.0.3-GCC-13.3.0 
 
 source ds_env/bin/activate
 
 # Configuration
-MODEL_PATH="${MODEL_PATH:-model_weights_segformer_b2/segformer_best}"
-CONFIG_FILE="${CONFIG_FILE:-src/segformer/config_segformer.yaml}"
-OUTPUT_DIR="${OUTPUT_DIR:-evaluation_results_segformer}"
-BATCH_SIZE="${BATCH_SIZE:-32}"
+MODEL_PATH="/project/home/p200776/u103235/cvia/CVIA-25-project-team-theta/model_weights_segformer_b4_768/segformer_best"
+CONFIG_FILE="/project/home/p200776/u103235/cvia/CVIA-25-project-team-theta/src/segformer/config_segformer_b4.yaml"
+OUTPUT_DIR="evaluation_results_segformer_b4_768"
+BATCH_SIZE="${BATCH_SIZE:-8}"
 SPLIT="${SPLIT:-val}"
 
 echo ""

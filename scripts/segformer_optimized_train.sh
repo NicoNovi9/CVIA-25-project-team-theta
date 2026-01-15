@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH --job-name=train_segformer_opt
-#SBATCH --time=2:00:00
+#SBATCH --time=25:00:00
 #SBATCH --partition=gpu
 #SBATCH --qos=default
 #SBATCH --account=p200981

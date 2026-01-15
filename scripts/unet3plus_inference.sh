@@ -37,7 +37,7 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 echo "Running inference..."
 
 python src/unet3plus/inference_unet3plus.py \
-    --model_path model_weights_unet3plus/unet3plus_best \
+    --model_path /project/home/p200776/u103235/cvia/local/models_trained/3_model_weights_unet3plus_30epochs/unet3plus_best \
     --data_path /project/scratch/p200981/spark2024_test/segmentation/stream-1-test \
     --output_dir submission_output_unet3plus \
     --batch_size 8 \

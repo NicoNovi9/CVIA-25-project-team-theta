@@ -1,0 +1,47 @@
+======================================================================
+TRAINING REPORT - YOLO Detector Model
+======================================================================
+
+GENERAL INFORMATION
+----------------------------------------------------------------------
+Training Start: 2026-01-14 23:56:45
+Training End:   2026-01-15 19:43:02
+Total Duration: 19.77 hours
+Configuration: src/yolo/config_yolo.yaml
+
+MODEL CONFIGURATION
+----------------------------------------------------------------------
+Model: yolo11m
+Number of Classes: 10
+Classes: ['VenusExpress', 'Cheops', 'LisaPathfinder', 'ObservationSat1', 'Proba2', 'Proba3', 'Proba3ocs', 'Smart1', 'Soho', 'XMM Newton']
+Pretrained Backbone: True
+
+TRAINING PARAMETERS
+----------------------------------------------------------------------
+Epochs: 200
+Image Size: 960
+Batch Size: 128
+Patience: 35
+Learning Rate: 0.0025
+AMP: True
+Device: 0,1,2,3
+
+AUGMENTATION
+----------------------------------------------------------------------
+Level: custom
+  fliplr: 0.5
+  flipud: 0.1
+  degrees: 5.0
+  translate: 0.2
+  scale: 0.5
+  shear: 2.0
+  perspective: 0.0005
+  hsv_h: 0.015
+  hsv_s: 0.7
+  hsv_v: 0.4
+  mosaic: 1.0
+  mixup: 0.15
+  copy_paste: 0.1
+  auto_augment: 
+
+======================================================================

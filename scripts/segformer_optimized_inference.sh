@@ -34,8 +34,8 @@ source ds_env/bin/activate
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 # Configuration
-MODEL_PATH="${MODEL_PATH:-model_weights_segformer_optimized/segformer_optimized_best}"
-YOLO_MODEL="${YOLO_MODEL:-/project/home/p200776/u103235/cvia/CVIA-25-project-team-theta/trained_models/model_weights_yolo/yolo11n_640_spark/weights/best.pt}"
+MODEL_PATH="/project/home/p200776/u103235/cvia/CVIA-25-project-team-theta/trained_models/segformer/11_segformer_b2_optimized512/segformer_optimized_best"
+YOLO_MODEL="/project/home/p200776/u103235/cvia/CVIA-25-project-team-theta/trained_models/model_weights_yolo/7_yolo11s_640/weights/best.pt"
 DATA_PATH="${DATA_PATH:-/project/scratch/p200981/spark2024_test/segmentation/stream-1-test}"
 OUTPUT_DIR="${OUTPUT_DIR:-submission_segformer_optimized}"
 BATCH_SIZE="${BATCH_SIZE:-32}"

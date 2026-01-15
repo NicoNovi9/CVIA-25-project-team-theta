@@ -1,19 +1,19 @@
 #!/bin/bash -l
 #SBATCH --job-name=train_segformer
-#SBATCH --time=12:00:00
+#SBATCH --time=25:00:00
 #SBATCH --partition=gpu
 #SBATCH --qos=default
 #SBATCH --account=p200981
 
 # Multi-node configuration - adjust as needed
-#SBATCH --nodes=4
+#SBATCH --nodes=6
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-task=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:4
 
-#SBATCH --output=segformer_train.out
-#SBATCH --error=segformer_train.err
+#SBATCH --output=segformer_train_b4.out
+#SBATCH --error=segformer_train_b4.err
 
 echo "=================================================="
 echo "SegFormer Multi-Node Training"
@@ -33,11 +33,6 @@ module purge
 module load Python/3.11.10-GCCcore-13.3.0
 module load CUDA/12.6.0
 module load OpenMPI/5.0.3-GCC-13.3.0 
-# module load scikit-learn/1.5.2-gfbf-2024a
-# module load matplotlib/3.9.2-gfbf-2024a
-# module load Seaborn/0.13.2-gfbf-2024a
-# module load PyTorch/2.3.0-foss-2024a-CUDA-12.6.0
-# module load torchvision/0.18.1-foss-2024a-CUDA-12.6.0
 
 # =============================================================================
 # VIRTUAL ENVIRONMENT SETUP
@@ -56,7 +51,6 @@ module load OpenMPI/5.0.3-GCC-13.3.0
 # fi
 
 # Verify transformers is installed (needed for SegFormer)
-# python -c "import transformers" 2>/dev/null || pip install transformers
 python - << 'EOF'
 import torch
 import transformers
@@ -96,7 +90,8 @@ echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 # You can override specific parameters via CLI arguments if needed
 
 # Config file path (can be overridden)
-CONFIG_FILE="${CONFIG_FILE:-src/segformer/config_segformer.yaml}"
+# CONFIG_FILE="${CONFIG_FILE:-src/segformer/config_segformer.yaml}"
+CONFIG_FILE="src/segformer/config_segformer_b4.yaml"
 
 echo ""
 echo "Training Configuration:"

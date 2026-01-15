@@ -11,8 +11,8 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:4
 
-#SBATCH --output=segformer_inference_%j.out
-#SBATCH --error=segformer_inference_%j.err
+#SBATCH --output=segformer_inference.out
+#SBATCH --error=segformer_inference.err
 
 echo "=================================================="
 echo "SegFormer Inference"
@@ -26,22 +26,19 @@ echo "=================================================="
 # Module loading
 module purge
 module load Python/3.11.10-GCCcore-13.3.0
-module load scikit-learn/1.5.2-gfbf-2024a
-module load matplotlib/3.9.2-gfbf-2024a
-module load PyTorch/2.3.0-foss-2024a-CUDA-12.6.0
-module load torchvision/0.18.1-foss-2024a-CUDA-12.6.0
+module load CUDA/12.6.0
+module load OpenMPI/5.0.3-GCC-13.3.0 
 
 source ds_env/bin/activate
 
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 # Configuration
-MODEL_PATH="${MODEL_PATH:-model_weights_segformer_b2/segformer_best}"
+MODEL_PATH="/project/home/p200776/u103235/cvia/CVIA-25-project-team-theta/model_weights_segformer_b4_768/segformer_best"
 DATA_PATH="${DATA_PATH:-/project/scratch/p200981/spark2024_test/segmentation/stream-1-test}"
-OUTPUT_DIR="${OUTPUT_DIR:-submission_segformer}"
-BATCH_SIZE="${BATCH_SIZE:-64}"
-IMAGE_SIZE="${IMAGE_SIZE:-512}"
-
+OUTPUT_DIR="submission_segformer_b4_768"
+BATCH_SIZE="${BATCH_SIZE:-8}"
+IMAGE_SIZE="${IMAGE_SIZE:-768}"
 echo ""
 echo "Inference Configuration:"
 echo "  Model path: $MODEL_PATH"
@@ -58,18 +55,7 @@ python -u src/segformer/inference_segformer.py \
     --output_dir "$OUTPUT_DIR" \
     --batch_size "$BATCH_SIZE" \
     --image_size "$IMAGE_SIZE" \
-    --fp16 \
     --tta
-
-# Create submission zip if requested
-if [ "${CREATE_ZIP:-true}" = "true" ]; then
-    echo ""
-    echo "Creating submission zip..."
-    cd "$OUTPUT_DIR"
-    zip -r ../submission_segformer.zip *.npz
-    cd ..
-    echo "Created submission_segformer.zip"
-fi
 
 echo ""
 echo "=================================================="

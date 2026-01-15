@@ -20,16 +20,13 @@ echo "Start time: $(date)"
 echo "=================================================="
 
 # Load modules
+module purge
 module load Python/3.11.10-GCCcore-13.3.0
-module load scikit-learn/1.5.2-gfbf-2024a
-module load matplotlib/3.9.2-gfbf-2024a
-
-module load PyTorch/2.3.0-foss-2024a-CUDA-12.6.0
-module load torchvision/0.18.1-foss-2024a-CUDA-12.6.0
+module load CUDA/12.6.0
+module load OpenMPI/5.0.3-GCC-13.3.0 
 
 source ds_env/bin/activate
-
-# Install dependencies if needed
+# Install ultralytics if not present
 pip install ultralytics --quiet 2>/dev/null
 
 export CUDA_VISIBLE_DEVICES=0,1,2,3
@@ -38,16 +35,16 @@ cd ${SLURM_SUBMIT_DIR}
 
 # === CONFIGURATION ===
 # Change these paths as needed
-MODEL_PATH="model_weights_yolo/yolo11n_640/weights/best.pt"
+MODEL_PATH="/project/home/p200776/u103235/cvia/CVIA-25-project-team-theta/model_weights_yolo11m/yolo11m_960/weights/best.pt"
 DATA_PATH="/project/scratch/p200981/spark2024_test/detection/images"
-OUTPUT_DIR="submission_output_yolo"
+OUTPUT_DIR="submission_output_yolo11m"
 
 echo ""
 echo "Configuration:"
 echo "  Model: $MODEL_PATH"
 echo "  Data: $DATA_PATH"
 echo "  Output directory: $OUTPUT_DIR"
-echo "  GPU: 0"
+echo "  GPU: 0,1,2,3"
 echo ""
 
 # Run YOLO detection inference
@@ -56,9 +53,9 @@ python -u src/yolo/inference_yolo.py \
     --data_path "$DATA_PATH" \
     --output_dir "$OUTPUT_DIR" \
     --threshold 0.25 \
-    --imgsz 640 \
+    --imgsz 960 \
     --batch_size 64 \
-    --device 0
+    --device 0,1,2,3
 
 echo ""
 echo "=================================================="

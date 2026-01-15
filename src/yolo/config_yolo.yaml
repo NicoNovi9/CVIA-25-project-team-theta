@@ -23,7 +23,7 @@ data:
 model:
   # Model size: 'n' (nano), 's' (small), 'm' (medium), 'l' (large), 'x' (xlarge)
   # yolo11n.pt, yolo11s.pt, yolo11m.pt, yolo11l.pt, yolo11x.pt
-  size: "s"
+  size: "m"
   
   # Base model name (e.g., yolo11, yolov8)
   base: "yolo11"
@@ -36,26 +36,26 @@ model:
 # =============================================================================
 training:
   # Number of training epochs
-  epochs: 300
+  epochs: 200
   
   # Early stopping patience (epochs without improvement)
   patience: 35
   
   # Image input size (square)
-  imgsz: 640
+  imgsz: 960
   
   # Batch size per GPU (auto=0.8 for automatic batch sizing based on GPU memory)
-  batch_size: 512
+  batch_size: 128
   
   # Number of data loading workers per GPU
   workers: 8
   
   # Learning rate
-  lr0: 0.001
-  lrf: 0.001  # Final learning rate (lr0 * lrf)
+  lr0: 0.0025
+  lrf: 0.01  # Final learning rate (lr0 * lrf)
   
   # Optimizer: SGD, Adam, AdamW
-  optimizer: "AdamW"
+  optimizer: "SGD"
   
   # Weight decay
   weight_decay: 0.0005
@@ -77,7 +77,7 @@ training:
 # =============================================================================
 # Augmentation level: 'none', 'light', 'medium', 'heavy'
 augmentation:
-  level: "light"
+  level: "custom"
   
   # Specific augmentation parameters (override level defaults)
   # These are applied when level is 'custom' or to override specific values
@@ -85,11 +85,11 @@ augmentation:
   # Geometric augmentations
   fliplr: 0.5      # Horizontal flip probability
   flipud: 0.1      # Vertical flip probability  
-  degrees: 0.0     # Rotation degrees (+/- deg)
-  translate: 0.1   # Translation (+/- fraction)
-  scale: 0.1       # Scale (+/- gain)
-  shear: 0.0       # Shear (+/- deg)
-  perspective: 0.0 # Perspective (+/- fraction)
+  degrees: 5.0     # Rotation degrees (+/- deg)
+  translate: 0.2   # Translation (+/- fraction)
+  scale: 0.5       # Scale (+/- gain)
+  shear: 2.0       # Shear (+/- deg)
+  perspective: 0.0005 # Perspective (+/- fraction)
   
   # Color augmentations
   hsv_h: 0.015     # HSV-Hue augmentation (fraction)
@@ -98,8 +98,8 @@ augmentation:
   
   # Other augmentations
   mosaic: 1.0      # Mosaic augmentation probability
-  mixup: 0.0       # MixUp augmentation probability
-  copy_paste: 0.0  # Copy-paste augmentation probability
+  mixup: 0.15       # MixUp augmentation probability
+  copy_paste: 0.1  # Copy-paste augmentation probability
   
   # Auto augmentation: 'randaugment', 'autoaugment', 'augmix', or ''
   auto_augment: ""
